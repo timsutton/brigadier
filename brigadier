@@ -1,0 +1,292 @@
+#!/usr/bin/python
+
+import os
+import sys
+import subprocess
+import urllib2
+import plistlib
+import re
+import tempfile
+import shutil
+import optparse
+from urllib import urlretrieve
+from xml.dom import minidom
+
+SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
+# 7-Zip MSI (9.30 alpha)
+SEVENZIP_URL = 'http://dl.7-zip.org/7z930-x64.msi'
+# dmg2img zip download from http://vu1tur.eu.org/tools
+DMG2IMG_URL = 'http://vu1tur.eu.org/tools/dmg2img-1.6.4-win32.zip'
+
+def status(msg):
+    print "%s\n" % msg
+
+def getCommandOutput(cmd):
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    out, err = p.communicate()
+    return out
+
+# Returns this machine's model identifier, using wmic on Windows,
+# system_profiler on OS X
+def getMachineModel():
+    if sys.platform == 'win32':
+        rawxml = getCommandOutput(['wmic', 'computersystem', 'get', 'model', '/format:RAWXML'])
+        dom = minidom.parseString(rawxml)
+        results = dom.getElementsByTagName("RESULTS")
+        nodes = results[0].getElementsByTagName("CIM")[0].getElementsByTagName("INSTANCE")[0]\
+        .getElementsByTagName("PROPERTY")[0].getElementsByTagName("VALUE")[0].childNodes
+        model = nodes[0].data
+    elif sys.platform == 'darwin':
+        plistxml = getCommandOutput(['system_profiler', 'SPHardwareDataType', '-xml'])
+        plist = plistlib.readPlistFromString(plistxml)
+        model = plist[0]['_items'][0]['machine_model']
+    return model
+
+def getDmg2Img():
+    tempdir = tempfile.mkdtemp()
+    dmg2img_path = os.path.join(tempdir, DMG2IMG_URL.split('/')[-1])
+    urlretrieve(DMG2IMG_URL, filename=dmg2img_path)
+    sevenzipExtract(dmg2img_path)
+    dmg2img_exe = os.path.join(tempdir, 'dmg2img.exe')
+    if os.path.exists(dmg2img_exe):
+        return dmg2img_exe
+    else:
+        sys.exit("Can't find extracted dmg2img.exe")
+
+def sevenzipExtract(arcfile, command='e', out_dir=None):
+    cmd = [os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files", "7-Zip", "7z.exe")]
+    cmd.append(command)
+    if not out_dir:
+        out_dir = os.path.dirname(arcfile)
+    cmd.append("-o" + out_dir)
+    cmd.append("-y")
+    cmd.append(arcfile)
+    status("Calling 7-Zip command: %s" % ' '.join(cmd))
+    retcode = subprocess.call(cmd)
+    if retcode:
+        sys.exit("Command failure: %s exited %s." % (' '.join(cmd), retcode))
+
+def postInstallConfig():
+    regdata = """Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Apple Inc.\Apple Keyboard Support]
+"FirstTimeRun"=dword:00000000"""
+    handle, path = tempfile.mkstemp()
+    fd = os.fdopen(handle, 'w')
+    fd.write(regdata)
+    fd.close()
+    subprocess.call(['regedit.exe', '/s', path])
+
+def findBootcampMSI(search_dir):
+    """Returns the path of the 64-bit BootCamp MSI"""
+    bootcamp_dir = os.path.join(search_dir, 'Drivers', 'Apple')
+    # Most ESDs contain 'BootCamp.msi' and 'BootCamp64.msi'
+    # Dec. 2012 ESD contains only 'BootCamp.msi' which is 64-bit
+    candidates = ['BootCamp64.msi', 'BootCamp.msi']
+    for msi in candidates:
+        if os.path.exists(os.path.join(bootcamp_dir, msi)):
+            return os.path.join(bootcamp_dir, msi)
+
+def installBootcamp(msipath):
+    logpath = os.path.abspath("/BootCamp_Install.log")
+    cmd = ['cmd', '/c', 'msiexec', '/i', msipath, '/qn', '/norestart', '/log', logpath]
+    status("Executing command: '%s'" % " ".join(cmd))
+    subprocess.call(cmd)
+    status("Install log output:")
+    with open(logpath, 'r') as logfd:
+        logdata = logfd.read()
+        print logdata.decode('utf-16')
+    postInstallConfig()
+    
+def main():
+    scriptdir = os.path.abspath(os.path.dirname(sys.argv[0]))
+
+    o = optparse.OptionParser()
+    o.add_option('-m', '--model', help="System model identifier to use \
+(otherwise this machine's model is used).")
+    o.add_option('-i', '--install', action="store_true",
+        help="After the installer is downloaded, perform the install automatically. \
+Can be used on Windows only.")
+    o.add_option('-o', '--output-dir',
+        help="Base path where the installer files will be extracted into a folder named after the \
+product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is omitted.")
+    o.add_option('-l', '--leave-files', action="store_true",
+        help="Leave the files that were downloaded/extracted. Useful only with the \
+'--install' option on Windows.")
+
+    opts, args = o.parse_args()
+    if opts.install:
+        if sys.platform == 'darwin':
+            sys.exit("Installing Boot Camp can only be done on Windows!")
+        if sys.platform == 'win32' and os.environ['PROCESSOR_ARCHITECTURE'] != 'AMD64':
+		    sys.exit("Installing on anything other than 64-bit Windows is currently not supported!")
+
+    if opts.output_dir:
+        if not os.path.isdir(opts.output_dir):
+            sys.exit("Output directory %s that was specified doesn't exist!" % opts.output_dir)
+        if not os.access(opts.output_dir, os.W_OK):
+            sys.exit("Output directory %s is not writable by this user!" % opts.output_dir)
+        output_dir = opts.output_dir
+    else:
+        output_dir = os.getcwd()
+        if output_dir.endswith('ystem32'):
+            output_dir = os.environ['SystemDrive'] + "\\"
+            status("Changing output directory to %s to work around an issue \
+when running the installer out of 'system32'." % output_dir)
+
+    if opts.leave_files and not opts.install:
+        sys.exit("The --leave-files option is only useful when used with --install option!")
+
+    if opts.model:
+        model = opts.model
+    else:
+        model = getMachineModel()
+    status("Using Mac model '%s'." % model)
+
+    sucatalog_url = SUCATALOG_URL
+    # check if we defined anything in brigadier.plist
+    config_plist = None
+    plist_path = os.path.join(scriptdir, 'brigadier.plist')
+    if os.path.isfile(plist_path):
+        try:
+            config_plist = plistlib.readPlist(plist_path)
+        except:
+            status("Config plist was found at %s but it could not be read. \
+            Verify that it is readable and is an XML formatted plist." % plist_path)
+    if config_plist:
+        if 'CatalogURL' in config_plist.keys():
+            sucatalog_url = config_plist['CatalogURL']
+
+
+    urlfd = urllib2.urlopen(sucatalog_url)
+    data = urlfd.read()
+    p = plistlib.readPlistFromString(data)
+    allprods = p['Products']
+
+    # Get all Boot Camp ESD products
+    bc_prods = []
+    for (prod_id, prod_data) in allprods.items():
+        if 'ServerMetadataURL' in prod_data.keys():
+            bc_match = re.search('BootCamp', prod_data['ServerMetadataURL'])
+            if bc_match:
+                bc_prods.append((prod_id, prod_data))
+
+    # Find the ESD(s) that applies to our model
+    pkg_data = []
+    supported_models = []
+
+    re_model = "([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])"
+    for bc_prod in bc_prods:
+        if 'English' in bc_prod[1]['Distributions'].keys():
+            disturl = bc_prod[1]['Distributions']['English']
+            distfd = urllib2.urlopen(disturl)
+            dist_data = distfd.read()
+            if re.search(model, dist_data):
+                pkg_data.append({bc_prod[0]: bc_prod[1]})
+                model_matches_in_dist = re.findall(re_model, dist_data)
+                for supported_model in model_matches_in_dist:
+                    supported_models.append(supported_model)
+                status("Model supported in package distribution file at %s." % disturl)
+                status("Distribution supports the following models: %s." % ', '.join(supported_models))
+    
+    # Ensure we have only one ESD
+    if len(pkg_data) > 1:
+        sys.exit("There was more than one SUS pkg available (this should never happen, \
+but it's possible if you're using your own SUS and you have both old and current ESDs for \
+the same model): %s" % pkg_data.join(", "))
+    if len(pkg_data) == 0:
+        sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
+
+    pkg_data = pkg_data[0]
+    pkg_id = pkg_data.keys()[0]
+    pkg_url = pkg_data.values()[0]['Packages'][0]['URL']
+
+    # make a sub-dir in the output_dir here, named by product
+    landing_dir = os.path.join(output_dir, 'BootCamp-' + pkg_id)
+    if os.path.exists(landing_dir):
+        status("Final output path %s already exists, removing it..." % landing_dir)
+        if sys.platform == 'win32':
+            # using rmdir /qs because shutil.rmtree dies on the Doc files with foreign language characters
+            subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
+        else:
+            shutil.rmtree(landing_dir)
+
+    status("Making directory %s.." % landing_dir)
+    os.mkdir(landing_dir)
+
+    arc_workdir = tempfile.mkdtemp(prefix="bootcamp-unpack_")
+    pkg_dl_path = os.path.join(arc_workdir, pkg_url.split('/')[-1])
+
+    status("Fetching Boot Camp product at URL %s." % pkg_url)
+    urlretrieve(pkg_url, filename=pkg_dl_path)
+
+    if sys.platform == 'win32':
+        we_installed_7zip = False
+        sevenzip_binary = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", 'Program Files', '7-Zip', '7z.exe')
+        # fetch and install 7-Zip
+        if not os.path.exists(sevenzip_binary):
+            tempdir = tempfile.mkdtemp()
+            sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
+            urlretrieve(SEVENZIP_URL, filename=sevenzip_msi_dl_path)
+            status("Downloaded 7-zip to %s." % sevenzip_msi_dl_path)
+            status("We need to install 7-Zip..")
+            retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])
+            status("7-Zip install returned exit code %s." % retcode)
+            we_installed_7zip = True
+
+        status("Extracting...")
+        # BootCamp.pkg (xar) -> Payload (gzip) -> Payload~ (cpio) -> WindowsSupport.dmg
+        for arc in [pkg_dl_path,
+                    os.path.join(arc_workdir, 'Payload'),
+                    os.path.join(arc_workdir, 'Payload~')]:
+            sevenzipExtract(arc)
+
+        dmg2iso_path = getDmg2Img()
+        dmg_extract_cmd = [dmg2iso_path, '-v',
+                        os.path.join(arc_workdir, 'WindowsSupport.dmg'),
+                        os.path.join(arc_workdir, 'WindowsSupport.iso')]
+        subprocess.call(dmg_extract_cmd)
+
+        sevenzipExtract(os.path.join(arc_workdir, 'WindowsSupport.iso'),
+                        command='x',
+                        out_dir=landing_dir)
+        if we_installed_7zip:
+            status("Cleaning up the 7-Zip install...")
+            subprocess.call(['cmd', '/c', 'msiexec', '/qn', '/x', sevenzip_msi_dl_path])
+        if opts.install:
+            status("Installing Boot Camp...")
+            installBootcamp(findBootcampMSI(landing_dir))
+            if not opts.leave_files:
+                subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
+
+        # clean up the temp dir always
+        subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', arc_workdir])
+
+
+
+    elif sys.platform == 'darwin':
+        status("Expanding flat package...")
+        subprocess.call(['/usr/sbin/pkgutil', '--expand', pkg_dl_path,
+                        os.path.join(arc_workdir, 'pkg')])
+        status("Extracting Payload...")
+        subprocess.call(['/usr/bin/tar', '-xz', '-C', arc_workdir, '-f', os.path.join(arc_workdir, 'pkg', 'Payload')])
+        output_file = os.path.join(landing_dir, 'WindowsSupport.dmg')
+        shutil.move(os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
+            output_file)
+        status("Extracted to %s." % output_file)
+
+        # If we were to also copy out the contents from the .dmg we might do it like this, but if you're doing this
+        # from OS X you probably would rather just burn a disc so we'll stop here..
+        # mountxml = getCommandOutput(['/usr/bin/hdiutil', 'attach',
+        #     os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
+        #     '-mountrandom', '/tmp', '-plist', '-nobrowse'])
+        # mountplist = plistlib.readPlistFromString(mountxml)
+        # mntpoint = mountplist['system-entities'][0]['mount-point']
+        # shutil.copytree(mntpoint, output_dir)
+        # subprocess.call(['/usr/bin/hdiutil', 'eject', mntpoint])
+        shutil.rmtree(arc_workdir)
+
+    status("Done.")
+
+if __name__ == "__main__":
+    main()

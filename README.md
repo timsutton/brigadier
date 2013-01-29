@@ -60,7 +60,7 @@ You can also create a `brigadier.plist` XML plist file and place it in the same 
 
 ## Running as a Sysprep FirstLogonCommand
 
-It's common to perform the Boot Camp drivers during a post-imaging Sysprep phase, so that it's possible to deploy the same image to different models without taking into account the model and required Boot Camp package. Brigadier seems to behave in the context of a SysPrep [FirstLogonCommand](http://technet.microsoft.com/en-us/library/cc722150(v=ws.10).aspx).
+It's common to perform the Boot Camp drivers during a post-imaging Sysprep phase, so that it's possible to deploy the same image to different models without taking into account the model and required Boot Camp package. Brigadier seems to behave in the context of a SysPrep [FirstLogonCommand](http://technet.microsoft.com/en-us/library/cc722150\(v=ws.10\)\.aspx).
 
 There is one workaround performed by the script when running in this scenario, where the current working would normally be `\windows\system32`. In my tests on a 64-bit system, the MSI would halt trying to locate its installer components, due to the way Windows forks its `System32` folder into `SysWoW64` for 32-bit applications. When the script detects this working directory without a `--output-dir` option overriding it, it will set the output directory to the root of the system, ie. `%SystemRoot%\`.
 

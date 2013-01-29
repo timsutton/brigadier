@@ -187,7 +187,7 @@ when running the installer out of 'system32'." % output_dir)
                 for supported_model in model_matches_in_dist:
                     supported_models.append(supported_model)
                 status("Model supported in package distribution file at %s." % disturl)
-                status("Distribution supports the following models: %s." % ', '.join(supported_models))
+                status("Distribution supports the following models: %s." % ", ".join(supported_models))
     
     # Ensure we have only one ESD
     if len(pkg_data) > 1:

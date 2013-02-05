@@ -1,6 +1,6 @@
 # Brigadier
 
-A Windows- and OS X-compatible Python script that fetches, from Apple's or your software update server, the Boot Camp ESD ("Electronic Software Distribution") for a specific model of Mac. It unpacks the multiple layers of archives within the flat package and if the script is run on Windows with the `--install` option, it also runs the 64-bit MSI installer. It currently _does not_ support installation on 32-bit Windows.
+A Windows- and OS X-compatible Python script that fetches, from Apple's or your software update server, the Boot Camp ESD ("Electronic Software Distribution") for a specific model of Mac. It unpacks the multiple layers of archives within the flat package and if the script is run on Windows with the `--install` option, it also runs the 64-bit MSI installer. It currently _does not_ support installation on 32-bit Windows. If 32-bit Windows support is important to you, there is an [issue](https://github.com/timsutton/brigadier/issues/2) created to track it.
 
 On Windows, the archives are unpacked using [7-Zip](http://www.7-zip.org) and [dmg2img](http://vu1tur.eu.org/tools), so these are downloaded and installed (and removed later) as needed. 7-Zip can convert .dmgs to ISOs as well, however I experienced inconsistent results across different currently-offered BootCampESD.pkgs, and haven't had any issues with dmg2img. More details on the extraction on Windows can be found below.
 
@@ -60,7 +60,7 @@ You can also create a `brigadier.plist` XML plist file and place it in the same 
 
 ## Running as a Sysprep FirstLogonCommand
 
-It's common to perform the Boot Camp drivers during a post-imaging Sysprep phase, so that it's possible to deploy the same image to different models without taking into account the model and required Boot Camp package. Brigadier seems to behave in the context of a SysPrep [FirstLogonCommand](http://technet.microsoft.com/en-us/library/cc722150\(v=ws.10\)\.aspx).
+It's common to perform the Boot Camp drivers during a post-imaging Sysprep phase, so that it's possible to deploy the same image to different models without taking into account the model and required Boot Camp package. Brigadier seems to behave in the context of a SysPrep <a href="http://technet.microsoft.com/en-us/library/cc722150(v=ws.10).aspx">FirstLogonCommand</a>.
 
 There is one workaround performed by the script when running in this scenario, where the current working would normally be `\windows\system32`. In my tests on a 64-bit system, the MSI would halt trying to locate its installer components, due to the way Windows forks its `System32` folder into `SysWoW64` for 32-bit applications. When the script detects this working directory without a `--output-dir` option overriding it, it will set the output directory to the root of the system, ie. `%SystemRoot%\`.
 
@@ -80,7 +80,7 @@ On OS X, we have the native hdiutil and pkgutil commands to do the work of unpac
 
 ## Caveats
 
-* It requires an internet connection, which therefore requires that a working network driver be available. The simplest way I've found to do this is to place the various network drivers from BootCampESDs inside a "BootCamp" (or similar) folder within `C:\Windows\INF`. This folder is the default search location for device drivers, and it should automatically detect and install drivers located here for all unknown hardware. You can also modify the `DevicePath` [registry key](http://technet.microsoft.com/en-us/library/cc731664(v=ws.10).aspx) to add a custom location, but using the existing `INF` folder means no other changes besides a file copy are required to update an existing image's drivers, so this can be done without actually restoring the image and booting it just to install a driver.
+* It requires an internet connection, which therefore requires that a working network driver be available. The simplest way I've found to do this is to place the various network drivers from BootCampESDs inside a "BootCamp" (or similar) folder within `C:\Windows\INF`. This folder is the default search location for device drivers, and it should automatically detect and install drivers located here for all unknown hardware. You can also modify the `DevicePath` <a href="http://technet.microsoft.com/en-us/library/cc731664(v=ws.10).aspx">registry key</a> to add a custom location, but using the existing `INF` folder means no other changes besides a file copy are required to update an existing image's drivers, so this can be done without actually restoring the image and booting it just to install a driver.
 * It currently performs almost no error handling.
 * The 7-Zip and dmg2iso tools download from URLs hardcoded in the script. Soon the `brigadier.plist` will support overriding these URLs with your own copies stored on a private webserver.
 * After installation, it sets the `FirstTimeRun` registry key at `HKEY_CURRENT_USER\Software\Apple Inc.\Apple Keyboard Support` to disable the first-launch Boot Camp help popup, and there's currently no option to disable this behaviour. 

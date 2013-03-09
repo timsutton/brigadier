@@ -138,6 +138,9 @@ when running the installer out of 'system32'." % output_dir)
         sys.exit("The --leave-files option is only useful when used with --install option!")
 
     if opts.model:
+        if opts.install:
+            status("Ignoring '--model' when '--install' is used. The Boot Camp "
+                   "installer won't allow other models to be installed, anyway.")
         model = opts.model
     else:
         model = getMachineModel()

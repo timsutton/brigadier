@@ -2,3 +2,5 @@
 pyinstaller.zip
 pyinstaller-*
 brigadier*.zip
+/brigadier.plist
+BootCamp-*

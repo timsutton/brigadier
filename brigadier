@@ -173,7 +173,6 @@ when running the installer out of 'system32'." % output_dir)
             bc_match = re.search('BootCamp', prod_data['ServerMetadataURL'])
             if bc_match:
                 bc_prods.append((prod_id, prod_data))
-
     # Find the ESD(s) that applies to our model
     pkg_data = []
     supported_models = []
@@ -184,6 +183,11 @@ when running the installer out of 'system32'." % output_dir)
             disturl = bc_prod[1]['Distributions']['English']
             distfd = urllib2.urlopen(disturl)
             dist_data = distfd.read()
+            # Quick and dirty hack to skip BootCampAutoUnattend we don't yet handle
+            if re.search('BootCampAutoUnattend', dist_data):
+                status("BootCampAutoUnattend tag found in %s, skipping because we don't yet handle model-overlapping "
+                "ESDs properly.." % bc_prod[0])
+                continue
             if re.search(model, dist_data):
                 pkg_data.append({bc_prod[0]: bc_prod[1]})
                 model_matches_in_dist = re.findall(re_model, dist_data)

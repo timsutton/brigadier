@@ -25,7 +25,7 @@ Additional options shown below.
 
 ## Windows requirements
 
-You can find a pre-compiled binary of the most recent [release version](https://github.com/timsutton/brigadier/blob/master/VERSION) [here](https://dl.dropbox.com/u/429559/brigadier.zip) (sha1 189fa1b8f8267bb7bcb882e1becdc9e18c20f48a). This was built using [PyInstaller](http://www.pyinstaller.org).
+You can find a pre-compiled binary of the most recent [release version](https://github.com/timsutton/brigadier/blob/master/VERSION) [here](https://dl.dropbox.com/u/429559/brigadier.zip). This was built using [PyInstaller](http://www.pyinstaller.org).
 
 If you'd rather run it as a standard Python script, you'll need [Python for Windows](http://www.python.org/download/releases) (this was tested with the latest 2.7 release) in order to execute the script.
 

@@ -1,3 +1,7 @@
+0.1.4 (April 12, 2013)
+- handle the case of multiple ESDs applicable to a model by selecting the
+  one with the most recent PostDate
+
 0.1.3 (March 15, 2013)
 - temporary workaround for model overlap with AutoUnattend-style BootCamp ESDs
   released March 14, 2013

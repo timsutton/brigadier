@@ -9,6 +9,7 @@ import re
 import tempfile
 import shutil
 import optparse
+import datetime
 from urllib import urlretrieve
 from xml.dom import minidom
 
@@ -183,11 +184,6 @@ when running the installer out of 'system32'." % output_dir)
             disturl = bc_prod[1]['Distributions']['English']
             distfd = urllib2.urlopen(disturl)
             dist_data = distfd.read()
-            # Quick and dirty hack to skip BootCampAutoUnattend we don't yet handle
-            if re.search('BootCampAutoUnattend', dist_data):
-                status("BootCampAutoUnattend tag found in %s, skipping because we don't yet handle model-overlapping "
-                "ESDs properly.." % bc_prod[0])
-                continue
             if re.search(model, dist_data):
                 pkg_data.append({bc_prod[0]: bc_prod[1]})
                 model_matches_in_dist = re.findall(re_model, dist_data)
@@ -197,14 +193,32 @@ when running the installer out of 'system32'." % output_dir)
                 status("Distribution supports the following models: %s." % ", ".join(supported_models))
     
     # Ensure we have only one ESD
-    if len(pkg_data) > 1:
-        sys.exit("There was more than one SUS pkg available (this should never happen, \
-but it's possible if you're using your own SUS and you have both old and current ESDs for \
-the same model): %s" % pkg_data.join(", "))
     if len(pkg_data) == 0:
         sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
+    if len(pkg_data) > 1:
+        # sys.exit("There is more than one ESD product available for this model: %s. "
+        #          "Automically selecting the one with the most recent PostDate.." 
+        #          % ", ".join([p.keys()[0] for p in pkg_data]))
+        print "There is more than one ESD product available for this model:"
+        # Init latest to be epoch start
+        latest_date = datetime.datetime.fromtimestamp(0)
+        latest_product = None
+        for i, p in enumerate(pkg_data):
+            product = p.keys()[0]
+            postdate = p[product].get('PostDate')
+            print "%s: PostDate %s" % (product, postdate)
+            if postdate > latest_date:
+                latest_date = postdate
+                latest_product = product
+        print "Selecting %s as it's the most recently posted." % latest_product
+        selected_pkg = None
+        for p in pkg_data:
+            if p.keys()[0] == latest_product:
+                selected_pkg = p
+        pkg_data = selected_pkg
+    else:
+        pkg_data = pkg_data[0]
 
-    pkg_data = pkg_data[0]
     pkg_id = pkg_data.keys()[0]
     pkg_url = pkg_data.values()[0]['Packages'][0]['URL']
 

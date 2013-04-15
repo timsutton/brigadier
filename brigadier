@@ -80,13 +80,17 @@ def postInstallConfig():
 
 def findBootcampMSI(search_dir):
     """Returns the path of the 64-bit BootCamp MSI"""
-    bootcamp_dir = os.path.join(search_dir, 'Drivers', 'Apple')
     # Most ESDs contain 'BootCamp.msi' and 'BootCamp64.msi'
     # Dec. 2012 ESD contains only 'BootCamp.msi' which is 64-bit
+    # The top-level structure of the ESD files depends on whether
+    # it's an AutoUnattend-based ESD as well, ie:
+    # /Drivers/Apple/BootCamp64.msi, or
+    # /BootCamp/Drivers/Apple/BootCamp.msi
     candidates = ['BootCamp64.msi', 'BootCamp.msi']
-    for msi in candidates:
-        if os.path.exists(os.path.join(bootcamp_dir, msi)):
-            return os.path.join(bootcamp_dir, msi)
+    for root, dirs, files in os.walk(search_dir):
+        for msi in candidates:
+            if msi in files:
+                return os.path.join(root, msi)
 
 def installBootcamp(msipath):
     logpath = os.path.abspath("/BootCamp_Install.log")

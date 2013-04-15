@@ -1,3 +1,8 @@
+0.1.5 (April 15, 2013)
+- fix failure to properly locate BootCamp MSI with latest AutoUnattend-based
+  drivers. now search for BootCamp{64,}.msi starting from the root down,
+  so we don't expect a specific folder hierarchy.
+
 0.1.4 (April 12, 2013)
 - handle the case of multiple ESDs applicable to a model by selecting the
   one with the most recent PostDate

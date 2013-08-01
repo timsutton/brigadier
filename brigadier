@@ -32,14 +32,14 @@ def getCommandOutput(cmd):
 # Returns this machine's model identifier, using wmic on Windows,
 # system_profiler on OS X
 def getMachineModel():
-    if sys.platform == 'win32':
+    if platform.system() == 'Windows':
         rawxml = getCommandOutput(['wmic', 'computersystem', 'get', 'model', '/format:RAWXML'])
         dom = minidom.parseString(rawxml)
         results = dom.getElementsByTagName("RESULTS")
         nodes = results[0].getElementsByTagName("CIM")[0].getElementsByTagName("INSTANCE")[0]\
         .getElementsByTagName("PROPERTY")[0].getElementsByTagName("VALUE")[0].childNodes
         model = nodes[0].data
-    elif sys.platform == 'darwin':
+    elif platform.system() == 'Darwin':
         plistxml = getCommandOutput(['system_profiler', 'SPHardwareDataType', '-xml'])
         plist = plistlib.readPlistFromString(plistxml)
         model = plist[0]['_items'][0]['machine_model']
@@ -123,9 +123,9 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
 
     opts, args = o.parse_args()
     if opts.install:
-        if sys.platform == 'darwin':
+        if platform.system() == 'Darwin':
             sys.exit("Installing Boot Camp can only be done on Windows!")
-        if sys.platform == 'win32' and platform.machine() != 'AMD64':
+        if platform.system() == 'Windows' and platform.machine() != 'AMD64':
 		    sys.exit("Installing on anything other than 64-bit Windows is currently not supported!")
 
     if opts.output_dir:
@@ -232,7 +232,7 @@ when running the installer out of 'system32'." % output_dir)
     landing_dir = os.path.join(output_dir, 'BootCamp-' + pkg_id)
     if os.path.exists(landing_dir):
         status("Final output path %s already exists, removing it..." % landing_dir)
-        if sys.platform == 'win32':
+        if platform.system() == 'Windows':
             # using rmdir /qs because shutil.rmtree dies on the Doc files with foreign language characters
             subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
         else:
@@ -247,7 +247,7 @@ when running the installer out of 'system32'." % output_dir)
     status("Fetching Boot Camp product at URL %s." % pkg_url)
     urlretrieve(pkg_url, filename=pkg_dl_path)
 
-    if sys.platform == 'win32':
+    if platform.system() == 'Windows':
         we_installed_7zip = False
         sevenzip_binary = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", 'Program Files', '7-Zip', '7z.exe')
         # fetch and install 7-Zip
@@ -291,7 +291,7 @@ when running the installer out of 'system32'." % output_dir)
 
 
 
-    elif sys.platform == 'darwin':
+    elif platform.system() == 'Darwin':
         status("Expanding flat package...")
         subprocess.call(['/usr/sbin/pkgutil', '--expand', pkg_dl_path,
                         os.path.join(arc_workdir, 'pkg')])

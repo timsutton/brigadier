@@ -10,6 +10,8 @@ import tempfile
 import shutil
 import optparse
 import datetime
+import platform
+
 from urllib import urlretrieve
 from xml.dom import minidom
 
@@ -123,7 +125,7 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
     if opts.install:
         if sys.platform == 'darwin':
             sys.exit("Installing Boot Camp can only be done on Windows!")
-        if sys.platform == 'win32' and os.environ['PROCESSOR_ARCHITECTURE'] != 'AMD64':
+        if sys.platform == 'win32' and platform.machine() != 'AMD64':
 		    sys.exit("Installing on anything other than 64-bit Windows is currently not supported!")
 
     if opts.output_dir:

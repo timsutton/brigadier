@@ -1,3 +1,10 @@
+0.2.0 (August 4, 2013)
+- fix issues with Boot Camp installer not installing certain packages
+  (particularly nVidia/Intel mgmt), by switching the '/qn' option to '/qr'
+  - this runs a minimal GUI installation that still does not block for user
+    input
+- fix proper detection of Windows version architecture for older CPUs
+
 0.1.5 (April 15, 2013)
 - fix failure to properly locate BootCamp MSI with latest AutoUnattend-based
   drivers. now search for BootCamp{64,}.msi starting from the root down,

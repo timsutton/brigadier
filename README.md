@@ -17,7 +17,7 @@ Run brigadier with no options to download and unpack the ESD that applies to thi
 
 Run it with the `--model` option to specify an alternate model, in the form `MacPro3,1`, etc.
 
-Run it with the `--install` option to download and install it, deleting the drivers after installation. This obviously works only on Windows.
+Run it with the `--install` option to both download and install, deleting the drivers after installation. This obviously works only on Windows. This option was made for doing automated installations of the Boot Camp drivers.
 
 Place a `brigadier.plist` file in the same folder as the script to override the .sucatalog URL to point to an internal Software Update Server catalog (details below).
 

@@ -19,7 +19,7 @@ SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-mountainl
 # 7-Zip MSI (9.30 alpha)
 SEVENZIP_URL = 'http://dl.7-zip.org/7z930-x64.msi'
 # dmg2img zip download from http://vu1tur.eu.org/tools
-DMG2IMG_URL = 'http://vu1tur.eu.org/tools/dmg2img-1.6.4-win32.zip'
+DMG2IMG_URL = 'http://vu1tur.eu.org/tools/dmg2img-1.6.5-win32.zip'
 
 def status(msg):
     print "%s\n" % msg

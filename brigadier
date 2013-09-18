@@ -117,8 +117,8 @@ Can be used on Windows only.")
     o.add_option('-o', '--output-dir',
         help="Base path where the installer files will be extracted into a folder named after the \
 product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is omitted.")
-    o.add_option('-l', '--leave-files', action="store_true",
-        help="Leave the files that were downloaded/extracted. Useful only with the \
+    o.add_option('-k', '--keep-files', action="store_true",
+        help="Keep the files that were downloaded/extracted. Useful only with the \
 '--install' option on Windows.")
 
     opts, args = o.parse_args()

@@ -1,5 +1,7 @@
 0.2.1 (Unreleased)
 - update dmg2iso to 1.6.5
+- '-l/--leave-files' is now '-k/--keep-files', following the naming pattern
+  most other utilities use when keeping files around.
 
 0.2.0 (August 4, 2013)
 - fix issues with Boot Camp installer not installing certain packages

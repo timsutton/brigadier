@@ -47,7 +47,7 @@ Options:
                         into a folder named after the product, ie.
                         'BootCamp-041-1234'. Uses the current directory if
                         this option is omitted.
-  -l, --leave-files     Leave the files that were downloaded/extracted. Useful
+  -k, --keep-files      Keep the files that were downloaded/extracted. Useful
                         only with the '--install' option on Windows.</code></pre>
 
 You can also create a `brigadier.plist` XML plist file and place it in the same directory as the script. It currently supports one key: `CatalogURL`, a string that points to an internal SUS catalog URL that contains BootCampESD packages. See the example [in this repo](https://github.com/timsutton/brigadier/blob/master/plist-example/brigadier.plist).
@@ -58,7 +58,7 @@ It's common to perform the Boot Camp drivers during a post-imaging Sysprep phase
 
 There is one workaround performed by the script when running in this scenario, where the current working would normally be `\windows\system32`. In my tests on a 64-bit system, the MSI would halt trying to locate its installer components, due to the way Windows forks its `System32` folder into `SysWoW64` for 32-bit applications. When the script detects this working directory without a `--output-dir` option overriding it, it will set the output directory to the root of the system, ie. `%SystemRoot%\`.
 
-By default, when `--install` is used, it will clean up its extracted files after installation, unless the `--leave-files` option is given, so unless you want to keep the files around you shouldn't need to clean up after it.
+By default, when `--install` is used, it will clean up its extracted files after installation, unless the `--keep-files` option is given, so unless you want to keep the files around you shouldn't need to clean up after it.
 
 ## Running/building from source on Windows
 

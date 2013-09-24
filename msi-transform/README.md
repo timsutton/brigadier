@@ -6,7 +6,7 @@ If you'd like to test a Boot Camp installation in a VM, a Boot Camp installer wo
 
 It's possible (with some difficulty) to obtain the Orca MSI-editing tool from Microsoft to modify the MSI database. However, these database modifications can also be saved to "transform" files and applied using other tools.
 
-Included in this directory is a VBS script, `WiUseXfm.vbs`, copied from the [Windows Installer SDK scripting examples]("http://msdn.microsoft.com/en-ca/library/windows/desktop/aa372865(v=vs.85).aspx"). The `set_nocheck.mst` file is a pre-made transform that only modifies this `NOCHECK` property. This allows you to quickly modify the installer before calling `msiexec`. Here's how you could call this from within this folder:
+Included in this directory is a VBS script, `WiUseXfm.vbs`, copied from the [Windows Installer SDK scripting examples](http://msdn.microsoft.com/en-ca/library/windows/desktop/aa372865\(v\=vs.85\).aspx). The `set_nocheck.mst` file is a pre-made transform that only modifies this `NOCHECK` property. This allows you to quickly modify the installer before calling `msiexec`. Here's how you could call this from within this folder:
 
 `cscript WiUseXfm.vbs \path\to\Drivers\Apple\BootCamp.msi set_nocheck.mst`
 

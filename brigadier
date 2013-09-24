@@ -141,8 +141,8 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
             status("Changing output directory to %s to work around an issue \
 when running the installer out of 'system32'." % output_dir)
 
-    if opts.leave_files and not opts.install:
-        sys.exit("The --leave-files option is only useful when used with --install option!")
+    if opts.keep_files and not opts.install:
+        sys.exit("The --keep-files option is only useful when used with --install option!")
 
     if opts.model:
         if opts.install:
@@ -283,7 +283,7 @@ when running the installer out of 'system32'." % output_dir)
         if opts.install:
             status("Installing Boot Camp...")
             installBootcamp(findBootcampMSI(landing_dir))
-            if not opts.leave_files:
+            if not opts.keep_files:
                 subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
 
         # clean up the temp dir always

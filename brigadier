@@ -109,8 +109,10 @@ def main():
     scriptdir = os.path.abspath(os.path.dirname(sys.argv[0]))
 
     o = optparse.OptionParser()
-    o.add_option('-m', '--model', help="System model identifier to use \
-(otherwise this machine's model is used).")
+    o.add_option('-m', '--model', action="append",
+        help="System model identifier to use (otherwise this machine's \
+model is used). This can be specified multiple times to download \
+multiple models in a single run.")
     o.add_option('-i', '--install', action="store_true",
         help="After the installer is downloaded, perform the install automatically. \
 Can be used on Windows only.")
@@ -148,170 +150,173 @@ when running the installer out of 'system32'." % output_dir)
         if opts.install:
             status("Ignoring '--model' when '--install' is used. The Boot Camp "
                    "installer won't allow other models to be installed, anyway.")
-        model = opts.model
+        models = opts.model
     else:
-        model = getMachineModel()
-    status("Using Mac model '%s'." % model)
-
-    sucatalog_url = SUCATALOG_URL
-    # check if we defined anything in brigadier.plist
-    config_plist = None
-    plist_path = os.path.join(scriptdir, 'brigadier.plist')
-    if os.path.isfile(plist_path):
-        try:
-            config_plist = plistlib.readPlist(plist_path)
-        except:
-            status("Config plist was found at %s but it could not be read. \
-            Verify that it is readable and is an XML formatted plist." % plist_path)
-    if config_plist:
-        if 'CatalogURL' in config_plist.keys():
-            sucatalog_url = config_plist['CatalogURL']
-
-
-    urlfd = urllib2.urlopen(sucatalog_url)
-    data = urlfd.read()
-    p = plistlib.readPlistFromString(data)
-    allprods = p['Products']
-
-    # Get all Boot Camp ESD products
-    bc_prods = []
-    for (prod_id, prod_data) in allprods.items():
-        if 'ServerMetadataURL' in prod_data.keys():
-            bc_match = re.search('BootCamp', prod_data['ServerMetadataURL'])
-            if bc_match:
-                bc_prods.append((prod_id, prod_data))
-    # Find the ESD(s) that applies to our model
-    pkg_data = []
-    supported_models = []
-
-    re_model = "([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])"
-    for bc_prod in bc_prods:
-        if 'English' in bc_prod[1]['Distributions'].keys():
-            disturl = bc_prod[1]['Distributions']['English']
-            distfd = urllib2.urlopen(disturl)
-            dist_data = distfd.read()
-            if re.search(model, dist_data):
-                pkg_data.append({bc_prod[0]: bc_prod[1]})
-                model_matches_in_dist = re.findall(re_model, dist_data)
-                for supported_model in model_matches_in_dist:
-                    supported_models.append(supported_model)
-                status("Model supported in package distribution file at %s." % disturl)
-                status("Distribution supports the following models: %s." % ", ".join(supported_models))
-    
-    # Ensure we have only one ESD
-    if len(pkg_data) == 0:
-        sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
-    if len(pkg_data) > 1:
-        # sys.exit("There is more than one ESD product available for this model: %s. "
-        #          "Automically selecting the one with the most recent PostDate.." 
-        #          % ", ".join([p.keys()[0] for p in pkg_data]))
-        print "There is more than one ESD product available for this model:"
-        # Init latest to be epoch start
-        latest_date = datetime.datetime.fromtimestamp(0)
-        latest_product = None
-        for i, p in enumerate(pkg_data):
-            product = p.keys()[0]
-            postdate = p[product].get('PostDate')
-            print "%s: PostDate %s" % (product, postdate)
-            if postdate > latest_date:
-                latest_date = postdate
-                latest_product = product
-        print "Selecting %s as it's the most recently posted." % latest_product
-        selected_pkg = None
-        for p in pkg_data:
-            if p.keys()[0] == latest_product:
-                selected_pkg = p
-        pkg_data = selected_pkg
+        models = [getMachineModel()]
+    if len(models) > 1:
+        status("Using Mac models: %s." % ', '.join(models))
     else:
-        pkg_data = pkg_data[0]
+        status("Using Mac model: %s." % ', '.join(models))        
 
-    pkg_id = pkg_data.keys()[0]
-    pkg_url = pkg_data.values()[0]['Packages'][0]['URL']
+    for model in models:
+        sucatalog_url = SUCATALOG_URL
+        # check if we defined anything in brigadier.plist
+        config_plist = None
+        plist_path = os.path.join(scriptdir, 'brigadier.plist')
+        if os.path.isfile(plist_path):
+            try:
+                config_plist = plistlib.readPlist(plist_path)
+            except:
+                status("Config plist was found at %s but it could not be read. \
+                Verify that it is readable and is an XML formatted plist." % plist_path)
+        if config_plist:
+            if 'CatalogURL' in config_plist.keys():
+                sucatalog_url = config_plist['CatalogURL']
 
-    # make a sub-dir in the output_dir here, named by product
-    landing_dir = os.path.join(output_dir, 'BootCamp-' + pkg_id)
-    if os.path.exists(landing_dir):
-        status("Final output path %s already exists, removing it..." % landing_dir)
-        if platform.system() == 'Windows':
-            # using rmdir /qs because shutil.rmtree dies on the Doc files with foreign language characters
-            subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
+
+        urlfd = urllib2.urlopen(sucatalog_url)
+        data = urlfd.read()
+        p = plistlib.readPlistFromString(data)
+        allprods = p['Products']
+
+        # Get all Boot Camp ESD products
+        bc_prods = []
+        for (prod_id, prod_data) in allprods.items():
+            if 'ServerMetadataURL' in prod_data.keys():
+                bc_match = re.search('BootCamp', prod_data['ServerMetadataURL'])
+                if bc_match:
+                    bc_prods.append((prod_id, prod_data))
+        # Find the ESD(s) that applies to our model
+        pkg_data = []
+        supported_models = []
+
+        re_model = "([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])"
+        for bc_prod in bc_prods:
+            if 'English' in bc_prod[1]['Distributions'].keys():
+                disturl = bc_prod[1]['Distributions']['English']
+                distfd = urllib2.urlopen(disturl)
+                dist_data = distfd.read()
+                if re.search(model, dist_data):
+                    pkg_data.append({bc_prod[0]: bc_prod[1]})
+                    model_matches_in_dist = re.findall(re_model, dist_data)
+                    for supported_model in model_matches_in_dist:
+                        supported_models.append(supported_model)
+                    status("Model supported in package distribution file at %s." % disturl)
+                    status("Distribution supports the following models: %s." % ", ".join(supported_models))
+        
+        # Ensure we have only one ESD
+        if len(pkg_data) == 0:
+            sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
+        if len(pkg_data) > 1:
+            # sys.exit("There is more than one ESD product available for this model: %s. "
+            #          "Automically selecting the one with the most recent PostDate.." 
+            #          % ", ".join([p.keys()[0] for p in pkg_data]))
+            print "There is more than one ESD product available for this model:"
+            # Init latest to be epoch start
+            latest_date = datetime.datetime.fromtimestamp(0)
+            latest_product = None
+            for i, p in enumerate(pkg_data):
+                product = p.keys()[0]
+                postdate = p[product].get('PostDate')
+                print "%s: PostDate %s" % (product, postdate)
+                if postdate > latest_date:
+                    latest_date = postdate
+                    latest_product = product
+            print "Selecting %s as it's the most recently posted." % latest_product
+            selected_pkg = None
+            for p in pkg_data:
+                if p.keys()[0] == latest_product:
+                    selected_pkg = p
+            pkg_data = selected_pkg
         else:
-            shutil.rmtree(landing_dir)
+            pkg_data = pkg_data[0]
 
-    status("Making directory %s.." % landing_dir)
-    os.mkdir(landing_dir)
+        pkg_id = pkg_data.keys()[0]
+        pkg_url = pkg_data.values()[0]['Packages'][0]['URL']
 
-    arc_workdir = tempfile.mkdtemp(prefix="bootcamp-unpack_")
-    pkg_dl_path = os.path.join(arc_workdir, pkg_url.split('/')[-1])
-
-    status("Fetching Boot Camp product at URL %s." % pkg_url)
-    urlretrieve(pkg_url, filename=pkg_dl_path)
-
-    if platform.system() == 'Windows':
-        we_installed_7zip = False
-        sevenzip_binary = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", 'Program Files', '7-Zip', '7z.exe')
-        # fetch and install 7-Zip
-        if not os.path.exists(sevenzip_binary):
-            tempdir = tempfile.mkdtemp()
-            sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
-            urlretrieve(SEVENZIP_URL, filename=sevenzip_msi_dl_path)
-            status("Downloaded 7-zip to %s." % sevenzip_msi_dl_path)
-            status("We need to install 7-Zip..")
-            retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])
-            status("7-Zip install returned exit code %s." % retcode)
-            we_installed_7zip = True
-
-        status("Extracting...")
-        # BootCamp.pkg (xar) -> Payload (gzip) -> Payload~ (cpio) -> WindowsSupport.dmg
-        for arc in [pkg_dl_path,
-                    os.path.join(arc_workdir, 'Payload'),
-                    os.path.join(arc_workdir, 'Payload~')]:
-            sevenzipExtract(arc)
-
-        dmg2iso_path = getDmg2Img()
-        dmg_extract_cmd = [dmg2iso_path, '-v',
-                        os.path.join(arc_workdir, 'WindowsSupport.dmg'),
-                        os.path.join(arc_workdir, 'WindowsSupport.iso')]
-        subprocess.call(dmg_extract_cmd)
-
-        sevenzipExtract(os.path.join(arc_workdir, 'WindowsSupport.iso'),
-                        command='x',
-                        out_dir=landing_dir)
-        if we_installed_7zip:
-            status("Cleaning up the 7-Zip install...")
-            subprocess.call(['cmd', '/c', 'msiexec', '/qn', '/x', sevenzip_msi_dl_path])
-        if opts.install:
-            status("Installing Boot Camp...")
-            installBootcamp(findBootcampMSI(landing_dir))
-            if not opts.keep_files:
+        # make a sub-dir in the output_dir here, named by product
+        landing_dir = os.path.join(output_dir, 'BootCamp-' + pkg_id)
+        if os.path.exists(landing_dir):
+            status("Final output path %s already exists, removing it..." % landing_dir)
+            if platform.system() == 'Windows':
+                # using rmdir /qs because shutil.rmtree dies on the Doc files with foreign language characters
                 subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
+            else:
+                shutil.rmtree(landing_dir)
 
-        # clean up the temp dir always
-        subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', arc_workdir])
+        status("Making directory %s.." % landing_dir)
+        os.mkdir(landing_dir)
+
+        arc_workdir = tempfile.mkdtemp(prefix="bootcamp-unpack_")
+        pkg_dl_path = os.path.join(arc_workdir, pkg_url.split('/')[-1])
+
+        status("Fetching Boot Camp product at URL %s." % pkg_url)
+        urlretrieve(pkg_url, filename=pkg_dl_path)
+
+        if platform.system() == 'Windows':
+            we_installed_7zip = False
+            sevenzip_binary = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", 'Program Files', '7-Zip', '7z.exe')
+            # fetch and install 7-Zip
+            if not os.path.exists(sevenzip_binary):
+                tempdir = tempfile.mkdtemp()
+                sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
+                urlretrieve(SEVENZIP_URL, filename=sevenzip_msi_dl_path)
+                status("Downloaded 7-zip to %s." % sevenzip_msi_dl_path)
+                status("We need to install 7-Zip..")
+                retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])
+                status("7-Zip install returned exit code %s." % retcode)
+                we_installed_7zip = True
+
+            status("Extracting...")
+            # BootCamp.pkg (xar) -> Payload (gzip) -> Payload~ (cpio) -> WindowsSupport.dmg
+            for arc in [pkg_dl_path,
+                        os.path.join(arc_workdir, 'Payload'),
+                        os.path.join(arc_workdir, 'Payload~')]:
+                sevenzipExtract(arc)
+
+            dmg2iso_path = getDmg2Img()
+            dmg_extract_cmd = [dmg2iso_path, '-v',
+                            os.path.join(arc_workdir, 'WindowsSupport.dmg'),
+                            os.path.join(arc_workdir, 'WindowsSupport.iso')]
+            subprocess.call(dmg_extract_cmd)
+
+            sevenzipExtract(os.path.join(arc_workdir, 'WindowsSupport.iso'),
+                            command='x',
+                            out_dir=landing_dir)
+            if we_installed_7zip:
+                status("Cleaning up the 7-Zip install...")
+                subprocess.call(['cmd', '/c', 'msiexec', '/qn', '/x', sevenzip_msi_dl_path])
+            if opts.install:
+                status("Installing Boot Camp...")
+                installBootcamp(findBootcampMSI(landing_dir))
+                if not opts.keep_files:
+                    subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
+
+            # clean up the temp dir always
+            subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', arc_workdir])
 
 
+        elif platform.system() == 'Darwin':
+            status("Expanding flat package...")
+            subprocess.call(['/usr/sbin/pkgutil', '--expand', pkg_dl_path,
+                            os.path.join(arc_workdir, 'pkg')])
+            status("Extracting Payload...")
+            subprocess.call(['/usr/bin/tar', '-xz', '-C', arc_workdir, '-f', os.path.join(arc_workdir, 'pkg', 'Payload')])
+            output_file = os.path.join(landing_dir, 'WindowsSupport.dmg')
+            shutil.move(os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
+                output_file)
+            status("Extracted to %s." % output_file)
 
-    elif platform.system() == 'Darwin':
-        status("Expanding flat package...")
-        subprocess.call(['/usr/sbin/pkgutil', '--expand', pkg_dl_path,
-                        os.path.join(arc_workdir, 'pkg')])
-        status("Extracting Payload...")
-        subprocess.call(['/usr/bin/tar', '-xz', '-C', arc_workdir, '-f', os.path.join(arc_workdir, 'pkg', 'Payload')])
-        output_file = os.path.join(landing_dir, 'WindowsSupport.dmg')
-        shutil.move(os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
-            output_file)
-        status("Extracted to %s." % output_file)
-
-        # If we were to also copy out the contents from the .dmg we might do it like this, but if you're doing this
-        # from OS X you probably would rather just burn a disc so we'll stop here..
-        # mountxml = getCommandOutput(['/usr/bin/hdiutil', 'attach',
-        #     os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
-        #     '-mountrandom', '/tmp', '-plist', '-nobrowse'])
-        # mountplist = plistlib.readPlistFromString(mountxml)
-        # mntpoint = mountplist['system-entities'][0]['mount-point']
-        # shutil.copytree(mntpoint, output_dir)
-        # subprocess.call(['/usr/bin/hdiutil', 'eject', mntpoint])
-        shutil.rmtree(arc_workdir)
+            # If we were to also copy out the contents from the .dmg we might do it like this, but if you're doing this
+            # from OS X you probably would rather just burn a disc so we'll stop here..
+            # mountxml = getCommandOutput(['/usr/bin/hdiutil', 'attach',
+            #     os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
+            #     '-mountrandom', '/tmp', '-plist', '-nobrowse'])
+            # mountplist = plistlib.readPlistFromString(mountxml)
+            # mntpoint = mountplist['system-entities'][0]['mount-point']
+            # shutil.copytree(mntpoint, output_dir)
+            # subprocess.call(['/usr/bin/hdiutil', 'eject', mntpoint])
+            shutil.rmtree(arc_workdir)
 
     status("Done.")
 

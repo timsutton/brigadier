@@ -1,4 +1,6 @@
 0.2.1 (Unreleased)
+- '--model' option can now be given multiple times to do multiple downloads
+  in a single run
 - update dmg2iso to 1.6.5
 - '-l/--leave-files' is now '-k/--keep-files', following the naming pattern
   most other utilities use when keeping files around.

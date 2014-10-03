@@ -2,10 +2,15 @@
 - '--model' option can now be given multiple times to do multiple downloads
   in a single run
 - update dmg2iso to 1.6.5
+- update 7-Zip to 9.34 alpha
+- update default SUS catalog to the Apple 10.9 catalog
 - '-l/--leave-files' is now '-k/--keep-files', following the naming pattern
   most other utilities use when keeping files around.
 - fix issue where the supported models list reported when multiple matching ESDs
   were found was inaccurate
+- fix issue where 7-Zip would fail to find a 'Payload' archive; certain ESD DMGs
+  recently expose only a 'Payload~' archive to 7-Zip, so we no longer assume
+  both exist
 
 0.2.0 (August 4, 2013)
 - fix issues with Boot Camp installer not installing certain packages

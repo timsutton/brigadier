@@ -273,7 +273,8 @@ when running the installer out of 'system32'." % output_dir)
             for arc in [pkg_dl_path,
                         os.path.join(arc_workdir, 'Payload'),
                         os.path.join(arc_workdir, 'Payload~')]:
-                sevenzipExtract(arc)
+                if os.path.exists(arc):
+                    sevenzipExtract(arc)
 
             dmg2iso_path = getDmg2Img()
             dmg_extract_cmd = [dmg2iso_path, '-v',

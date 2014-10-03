@@ -1,4 +1,4 @@
-0.2.1 (Unreleased)
+0.2.1 (October 3, 2014)
 - '--model' option can now be given multiple times to do multiple downloads
   in a single run
 - update dmg2iso to 1.6.5

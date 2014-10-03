@@ -129,7 +129,7 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
         if platform.system() == 'Darwin':
             sys.exit("Installing Boot Camp can only be done on Windows!")
         if platform.system() == 'Windows' and platform.machine() != 'AMD64':
-		    sys.exit("Installing on anything other than 64-bit Windows is currently not supported!")
+            sys.exit("Installing on anything other than 64-bit Windows is currently not supported!")
 
     if opts.output_dir:
         if not os.path.isdir(opts.output_dir):

@@ -16,7 +16,7 @@ from pprint import pprint
 from urllib import urlretrieve
 from xml.dom import minidom
 
-SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
+SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 # 7-Zip MSI (9.34 alpha)
 SEVENZIP_URL = 'http://dl.7-zip.org/7z934-x64.msi'
 # dmg2img zip download from http://vu1tur.eu.org/tools

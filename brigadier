@@ -46,10 +46,27 @@ def getMachineModel():
         model = plist[0]['_items'][0]['machine_model']
     return model
 
+def downloadFile(url, filename):
+    # http://stackoverflow.com/questions/13881092/
+    # download-progressbar-for-python-3/13895723#13895723
+    def reporthook(blocknum, blocksize, totalsize):
+        readsofar = blocknum * blocksize
+        if totalsize > 0:
+            percent = readsofar * 1e2 / totalsize
+            console_out = "\r%5.1f%% %*d / %d bytes" % (
+                percent, len(str(totalsize)), readsofar, totalsize)
+            sys.stderr.write(console_out)
+            if readsofar >= totalsize: # near the end
+                sys.stderr.write("\n")
+        else: # total size is unknown
+            sys.stderr.write("read %d\n" % (readsofar,))
+
+    urlretrieve(url, filename, reporthook=reporthook)
+
 def getDmg2Img():
     tempdir = tempfile.mkdtemp()
     dmg2img_path = os.path.join(tempdir, DMG2IMG_URL.split('/')[-1])
-    urlretrieve(DMG2IMG_URL, filename=dmg2img_path)
+    downloadFile(DMG2IMG_URL, dmg2img_path)
     sevenzipExtract(dmg2img_path)
     dmg2img_exe = os.path.join(tempdir, 'dmg2img.exe')
     if os.path.exists(dmg2img_exe):
@@ -252,7 +269,7 @@ when running the installer out of 'system32'." % output_dir)
         pkg_dl_path = os.path.join(arc_workdir, pkg_url.split('/')[-1])
 
         status("Fetching Boot Camp product at URL %s." % pkg_url)
-        urlretrieve(pkg_url, filename=pkg_dl_path)
+        downloadFile(pkg_url, pkg_dl_path)
 
         if platform.system() == 'Windows':
             we_installed_7zip = False
@@ -261,7 +278,7 @@ when running the installer out of 'system32'." % output_dir)
             if not os.path.exists(sevenzip_binary):
                 tempdir = tempfile.mkdtemp()
                 sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
-                urlretrieve(SEVENZIP_URL, filename=sevenzip_msi_dl_path)
+                downloadFile(SEVENZIP_URL, sevenzip_msi_dl_path)
                 status("Downloaded 7-zip to %s." % sevenzip_msi_dl_path)
                 status("We need to install 7-Zip..")
                 retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])

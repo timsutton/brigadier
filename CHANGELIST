@@ -1,3 +1,8 @@
+0.2.2 (June 3, 2014)
+- new option '-p/--product-id', allowing one to manually select a product
+  to download in cases where multiple products were found for a model
+- updated default Apple SUS catalog to Yosemite
+
 0.2.1 (October 3, 2014)
 - '--model' option can now be given multiple times to do multiple downloads
   in a single run

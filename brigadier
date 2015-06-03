@@ -140,6 +140,10 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
     o.add_option('-k', '--keep-files', action="store_true",
         help="Keep the files that were downloaded/extracted. Useful only with the \
 '--install' option on Windows.")
+    o.add_option('-p', '--product-id',
+        help="Specify an exact product ID to download (ie. '031-0787'), currently useful only for cases \
+where a model has multiple BootCamp ESDs available and is not downloading the desired version \
+according to the post date.")
 
     opts, args = o.parse_args()
     if opts.install:
@@ -225,6 +229,10 @@ when running the installer out of 'system32'." % output_dir)
         # Ensure we have only one ESD
         if len(pkg_data) == 0:
             sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
+        if len(pkg_data) == 1:
+            pkg_data = pkg_data[0]
+            if opts.product_id:
+                sys.exit("--product-id option is only applicable when multiple ESDs are found for a model.")
         if len(pkg_data) > 1:
             # sys.exit("There is more than one ESD product available for this model: %s. "
             #          "Automically selecting the one with the most recent PostDate.." 
@@ -232,22 +240,29 @@ when running the installer out of 'system32'." % output_dir)
             print "There is more than one ESD product available for this model:"
             # Init latest to be epoch start
             latest_date = datetime.datetime.fromtimestamp(0)
-            latest_product = None
+            chosen_product = None
             for i, p in enumerate(pkg_data):
                 product = p.keys()[0]
                 postdate = p[product].get('PostDate')
                 print "%s: PostDate %s" % (product, postdate)
                 if postdate > latest_date:
                     latest_date = postdate
-                    latest_product = product
-            print "Selecting %s as it's the most recently posted." % latest_product
-            selected_pkg = None
+                    chosen_product = product
+
+            if opts.product_id:
+                if opts.product_id not in [k.keys()[0] for k in pkg_data]:
+                    sys.exit("Product specified with '--product-id %s' either doesn't exist "
+                             "or was not found applicable to models: %s"
+                             % (opts.product_id, ", ".join(models)))
+                chosen_product = opts.product_id
+                print "Selecting manually-chosen product %s." % chosen_product
+            else:
+                print "Selecting %s as it's the most recently posted." % chosen_product
+
             for p in pkg_data:
-                if p.keys()[0] == latest_product:
+                if p.keys()[0] == chosen_product:
                     selected_pkg = p
             pkg_data = selected_pkg
-        else:
-            pkg_data = pkg_data[0]
 
         pkg_id = pkg_data.keys()[0]
         pkg_url = pkg_data.values()[0]['Packages'][0]['URL']

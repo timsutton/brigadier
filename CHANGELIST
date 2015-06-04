@@ -1,4 +1,4 @@
-0.2.2 (June 3, 2014)
+0.2.2 (June 3, 2015)
 - new option '-p/--product-id', allowing one to manually select a product
   to download in cases where multiple products were found for a model
 - updated default Apple SUS catalog to Yosemite

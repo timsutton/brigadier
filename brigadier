@@ -114,7 +114,7 @@ def findBootcampMSI(search_dir):
 
 def installBootcamp(msipath):
     logpath = os.path.abspath("/BootCamp_Install.log")
-    cmd = ['cmd', '/c', 'msiexec', '/i', msipath, '/qr', '/norestart', '/log', logpath]
+    cmd = ['cmd', '/c', 'msiexec', '/i', msipath, '/qb-', '/norestart', '/log', logpath]
     status("Executing command: '%s'" % " ".join(cmd))
     subprocess.call(cmd)
     status("Install log output:")

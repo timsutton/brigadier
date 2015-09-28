@@ -11,6 +11,16 @@ This was written for two reasons:
 
 It was originally designed to be run as post-imaging step for Boot Camp deployments to Macs, but as it requires network connectivity, a network driver must be already available on the system. (See Caveats below)
 
+## Important (!) note on support for Brigadier
+
+Brigadier has produced less-than-great results with some combinations of driver packages and hardware models in recent versions of Boot Camp 5, and now with Boot Camp 6. Some people have confirmed issues with Boot Camp 6 and Windows 7 in general, so these may not be entirely Brigadier's fault. Some examination of the Boot Camp `setup.exe` indicates to me that this executable performs several tasks and sets up some environment for the eventual execution of `BootCamp.msi`, which we're not always able to get with Brigadier's simple invocation of `msiexec` to install the MSI directly.
+
+I'm far from knowledgable enough about Windows internals to understand how to be able to perform a fully-automated version of whatever setup.exe actually does (besides eventually run `msiexec /i /qr` on the MSI). For example, [this PR](https://github.com/timsutton/brigadier/pull/14) suggests that better results can be achieved by using different "quiet" options to `msiexec`, but a disassembly of `setup.exe` shows that it is actually executing `/qr`, as does the code in the current master branch. This kind of question is one I don't feel I have enough knowledge to attempt an answer.
+
+There have been strange issues I've experienced a couple of years ago as well. For example, a single driver installer (Intel chipset-related) that pops up a series of WinRAR SFX errors due to it attempting to sequentially execute all of the driver's localization files (which aren't even executable). Simply clicking through these dialogs eventually causes the installation to continue, but until that happens the process is blocked. This error doesn't happen when a user manually runs `setup.exe`, but why I do not understand.
+
+While I maintain some hope to be able to resolve these issues, my environment's use case for dual-boot labs is shrinking and so it's difficult to justify the time required to spend further researching these issues. If anyone who is knowledgeable about reversing `setup.exe`-like installer wrappers and MSI installers, and Windows systems administration in general, is interested in tackling the currently-somewhat-broken support for silent installs of Boot Camp drivers in this tool, I'd love some help! There are several installer properties in `BootCamp.msi` that may be of some help with this issue as well.
+
 ## Usage
 
 Run brigadier with no options to download and unpack the ESD that applies to this model, to the current working directory. On OS X, the ESD is kept in a .dmg format for easy burning to a disc; on Windows, the driver files are extracted.

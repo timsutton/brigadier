@@ -1,5 +1,5 @@
 # Rewrite from Python to PowerShell - Requires PowerShell v3 or greater
-# To do: Set-Location to temp, add more output, add in functions for params like keep files, product id, etc., compile to EXE
+# To do: Add more output, add in functions for params like install, product id, etc.
 [CmdletBinding()]
 Param(
     [string]$Model = (Get-WmiObject -Class Win32_ComputerSystem | Select -ExpandProperty Model),
@@ -10,10 +10,13 @@ Param(
     [string]$PlistPath = "brigadier.plist",
     [string]$SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog',
     # 7-Zip MSI (15.14)
-    [string]$SEVENZIP_URL = 'http://7-zip.org/a/7z1514-x64.msi',
-    # dmg2img zip download from http://vu1tur.eu.org/tools
-    [string]$DMG2IMG_URL = 'http://vu1tur.eu.org/tools/dmg2img-1.6.5-win32.zip'
+    [string]$SEVENZIP_URL = 'http://7-zip.org/a/7z1514-x64.msi'
+    # Newer 7zip supports extracting DMG. May add support back if older version of 7z is found in the future.
+    #[string]$DMG2IMG_URL = 'http://vu1tur.eu.org/tools/dmg2img-1.6.5-win32.zip'
 )
+
+# Script processes too fast, so we have to add a pause to allow params to set up...
+Start-Sleep -Seconds 1
 
 # Set values from plist - I'm sure there's a better way to do this...
 if (Test-Path $PlistPath) {
@@ -28,13 +31,14 @@ if (Test-Path $PlistPath) {
 # Check if 7zip is installed. If not, download and install it
 $7z = "$env:ProgramFiles\7-Zip\7z.exe"
 if (!(Test-Path $7z)) {
-    Invoke-WebRequest -Uri $SEVENZIP_URL -OutFile "$env:TEMP\$($SEVENZIP_URL.Split('/')[-1])" -ErrorAction Stop -Proxy $proxyserver -ProxyCredential $proxycreds
-    Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/i $env:TEMP\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait 
+    Start-BitsTransfer -Source $SEVENZIP_URL -Destination "$OutputDir\$($SEVENZIP_URL.Split('/')[-1])" -ErrorAction Stop -ProxyList $proxyserver -ProxyCredential $proxycreds
+    #Invoke-WebRequest -Uri $SEVENZIP_URL -OutFile "$OutputDir\$($SEVENZIP_URL.Split('/')[-1])" -ErrorAction Stop -Proxy $proxyserver -ProxyCredential $proxycreds
+    Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/i $OutputDir\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait -Verbose
 } else { $7zInstalled = $true }
 
 # Download Dmg2Img
-Invoke-WebRequest -Uri $DMG2IMG_URL -OutFile "$env:TEMP\$($DMG2IMG_URL.Split('/')[-1])" -ErrorAction Stop -Proxy $proxyserver -ProxyCredential $proxycreds
-Invoke-Command -ScriptBlock { cmd /c "$7z" -o"$env:TEMP" -y e "$env:TEMP\$($DMG2IMG_URL.Split('/')[-1])" }
+Start-BitsTransfer -Source $DMG2IMG_URL -Destination "$OutputDir\$($DMG2IMG_URL.Split('/')[-1])" -ErrorAction Stop -ProxyList $proxyserver -ProxyCredential $proxycreds
+Invoke-Command -ScriptBlock { cmd /c "$7z" -o"$OutputDir" -y e "$OutputDir\$($DMG2IMG_URL.Split('/')[-1])" }
 
 # Read data from sucatalog
 [xml]$sucatalog = Invoke-WebRequest -Uri $SUCATALOG_URL -Method Get -ErrorAction Stop -Proxy $proxyserver -ProxyCredential $proxycreds
@@ -57,33 +61,37 @@ if ($bootcamplist.Length -gt 1) {
             #$download = $_.string.Replace(".smd",".pkg") - URL matches the .smd but may not always?
         }
     }
-} else { $download = $_.array.dict | Select -ExpandProperty String | Where-Object { $_ -match '.pkg' }}
+} else { $download = $bootcamplist.array.dict | Select -ExpandProperty String | Where-Object { $_ -match '.pkg' }}
 
 # Download the BootCamp ESD
-Invoke-WebRequest -Uri $download -OutFile "$env:TEMP\BootCampESD.pkg" -ErrorAction Stop -Proxy $proxyserver -ProxyCredential $proxycreds
-if (Test-Path -Path "$env:TEMP\BootCampESD.pkg") {
-    
-} else { Write-Output "BootCampESD.pkg could not be found" } # Should see the error from the Invoke-WebRequest, but throwing this in there until I change this to try / catch
-
-# Extract the WindowsSupport.dmg from the PKG
-Invoke-Command -ScriptBlock { 
-    cmd /c $7z -o"$env:TEMP" -y e "$env:TEMP\BootCampESD.pkg"
-    cmd /c $7z -o"$env:TEMP" -y e "$env:TEMP\Payload~"
-}
+Start-BitsTransfer -Source $download -Destination "$OutputDir\BootCampESD.pkg" -ErrorAction Stop -ProxyList $proxyserver -ProxyCredential $proxycreds
+if (Test-Path -Path "$OutputDir\BootCampESD.pkg") {
+    # Extract the bootcamp installer
+    Invoke-Command -ScriptBlock { 
+        cmd /c $7z -o"$OutputDir" -y e "$OutputDir\BootCampESD.pkg"
+        cmd /c $7z -o"$OutputDir" -y e "$OutputDir\Payload~"
+        If (!(Test-Path -Path "$OutputDir\BootCamp")) { New-Item -Path "$OutputDir\BootCamp" -ItemType Directory -Force }
+        cmd /c $7z -o"$env:SystemDrive" -y x "$OutputDir\WindowsSupport.dmg"
+    }
+} else { Write-Output "BootCampESD.pkg could not be found"; exit } 
 
 # Convert the DMG to ISO
-Invoke-Command -ScriptBlock { cmd /c "$env:TEMP\dmg2img.exe" -v "$env:TEMP\WindowsSupport.dmg" "$env:TEMP\WindowsSupport.iso" }
+# Invoke-Command -ScriptBlock { cmd /c "$OutputDir\dmg2img.exe" -v "$OutputDir\WindowsSupport.dmg" "$OutputDir\WindowsSupport.iso" }
 
 # Extract the ISO so we can run the installer
-If (!(Test-Path -Path "$env:TEMP\BootCamp")) { New-Item -Path "$env:TEMP\BootCamp" -ItemType Directory -Force }
-Invoke-Command -ScriptBlock { cmd /c $7z -o"$env:TEMP\Bootcamp" -y x "$env:TEMP\WindowsSupport.iso" }
+# Invoke-Command -ScriptBlock { cmd /c $7z -o"$OutputDir\Bootcamp" -y x "$OutputDir\WindowsSupport.iso" }
 
-#Uninstall 7zip and remove installer
-if ($7zInstalled -ne $true) { Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/x $env:TEMP\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait }
-Remove-Item -Path "$env:TEMP\$($SEVENZIP_URL.Split('/')[-1])" -Force
+# Uninstall 7zip and remove installer
+if ($7zInstalled -ne $true) { 
+    Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/x $OutputDir\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait 
+    Remove-Item -Path "$OutputDir\$($SEVENZIP_URL.Split('/')[-1])" -Force
+}
+
+# Must install Realtek Audio driver before installing Bootcamp. This step simply moves it, but you should install it first, reboot, then run this script
+Get-ChildItem -Path "$env:SystemDrive\" | Where-Object { $_.Name -like "BootCamp" -or $_.Name -eq "Drivers" } | Select -ExpandProperty FullName | ForEach-Object { Get-ChildItem -Path $_ -Recurse -Include RealtekSetup.exe | Select -ExpandProperty FullName } | Move-Item -Destination $OutputDir
 
 # Find Bootcamp.msi and install correct one
-$BootCampMSI = Get-ChildItem -Path $BootCampPath -Recurse -Include BootCamp*.msi | Select -ExpandProperty FullName
+$BootCampMSI = Get-ChildItem -Path "$env:SystemDrive\" | Where-Object { $_.Name -like "BootCamp" -or $_.Name -eq "Drivers" } | Select -ExpandProperty FullName | ForEach-Object { Get-ChildItem -Path $_ -Recurse -Include BootCamp*.msi | Select -ExpandProperty FullName }
 if ($BootCampMSI.Length -gt 1) {
     # Check OS architecture and install correct version
     if ((Get-WmiObject -Class Win32_OperatingSystem | Select -ExpandProperty OSArchitecture) -eq "64-bit") { 
@@ -92,7 +100,8 @@ if ($BootCampMSI.Length -gt 1) {
         $BootCampMSI = $BootCampMSI | Where-Object { $_ -notmatch "64" }
     }
 }
+# Need to test if Realtek Audio can be installed without reboot and then install Bootcamp or if reboot is required first.
 Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/i $BootCampMSI /qb- /norestart /log $env:SystemRoot\BootcampInstall.log" -Wait
 
 # Clean up
-Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+if ($KeepFiles -eq $false) { Remove-Item -Path "$OutputDir\*" -Recurse -Force -ErrorAction SilentlyContinue }

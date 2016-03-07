@@ -1,3 +1,9 @@
+### 0.2.3 (March 7, 2016)
+- set msiexec '/qb-' flag instead of '/qr' to avoid issues with modal
+  dialog popups during Boot Camp MSI installation (GH-14)
+- update default sucatalog to El Capitan
+- update 7-Zip to 15.14
+
 ### 0.2.2 (June 3, 2015)
 - new option '-p/--product-id', allowing one to manually select a product
   to download in cases where multiple products were found for a model

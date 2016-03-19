@@ -1,5 +1,6 @@
 install:
-  - cinst pywin32
+  - ps: (new-object net.webclient).DownloadFile("https://sourceforge.net/projects/pywin32/files/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe/download", 'c:\\pywin32.exe')
+  - cmd: c:\\python27-x64\\scripts\\easy_install.exe c:\\pywin32.exe
 
 build_script:
-  - "python scripts/build_windows_exe.py"
+  - cmd: c:\\python27-x64\\python.exe %APPVEYOR_BUILD_FOLDER%\\scripts\\build_windows_exe.py"

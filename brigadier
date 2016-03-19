@@ -19,8 +19,6 @@ from xml.dom import minidom
 SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 # 7-Zip MSI (15.14)
 SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
-# dmg2img zip download from http://vu1tur.eu.org/tools
-DMG2IMG_URL = 'http://vu1tur.eu.org/tools/dmg2img-1.6.5-win32.zip'
 
 def status(msg):
     print "%s\n" % msg
@@ -62,17 +60,6 @@ def downloadFile(url, filename):
             sys.stderr.write("read %d\n" % (readsofar,))
 
     urlretrieve(url, filename, reporthook=reporthook)
-
-def getDmg2Img():
-    tempdir = tempfile.mkdtemp()
-    dmg2img_path = os.path.join(tempdir, DMG2IMG_URL.split('/')[-1])
-    downloadFile(DMG2IMG_URL, dmg2img_path)
-    sevenzipExtract(dmg2img_path)
-    dmg2img_exe = os.path.join(tempdir, 'dmg2img.exe')
-    if os.path.exists(dmg2img_exe):
-        return dmg2img_exe
-    else:
-        sys.exit("Can't find extracted dmg2img.exe")
 
 def sevenzipExtract(arcfile, command='e', out_dir=None):
     cmd = [os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files", "7-Zip", "7z.exe")]
@@ -307,14 +294,8 @@ when running the installer out of 'system32'." % output_dir)
                         os.path.join(arc_workdir, 'Payload~')]:
                 if os.path.exists(arc):
                     sevenzipExtract(arc)
-
-            dmg2iso_path = getDmg2Img()
-            dmg_extract_cmd = [dmg2iso_path, '-v',
-                            os.path.join(arc_workdir, 'WindowsSupport.dmg'),
-                            os.path.join(arc_workdir, 'WindowsSupport.iso')]
-            subprocess.call(dmg_extract_cmd)
-
-            sevenzipExtract(os.path.join(arc_workdir, 'WindowsSupport.iso'),
+            # finally, 7-Zip also extracts the tree within the DMG to the output dir
+            sevenzipExtract(os.path.join(arc_workdir, 'WindowsSupport.dmg'),
                             command='x',
                             out_dir=landing_dir)
             if we_installed_7zip:

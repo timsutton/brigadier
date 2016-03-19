@@ -1,0 +1,5 @@
+install:
+  - cinst pywin32
+
+build_script:
+  - "python scripts/build_windows_exe.py"

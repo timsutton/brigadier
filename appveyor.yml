@@ -1,3 +1,9 @@
+version: 1.0.{build}
+
+branches:
+  only:
+  - appveyor
+
 install:
   - ps: (new-object net.webclient).DownloadFile("https://sourceforge.net/projects/pywin32/files/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe/download", 'c:\\pywin32.exe')
   - cmd: c:\\python27-x64\\scripts\\easy_install.exe c:\\pywin32.exe

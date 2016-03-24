@@ -1,3 +1,7 @@
+### 0.2.4 (March 24, 2016)
+- remove dependency on dmg2iso, as current 7-Zip versions seem to reliably
+  extract all the contents of WindowsSupport.dmg files
+
 ### 0.2.3 (March 7, 2016)
 - set msiexec '/qb-' flag instead of '/qr' to avoid issues with modal
   dialog popups during Boot Camp MSI installation (GH-14)

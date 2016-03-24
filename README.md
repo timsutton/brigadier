@@ -2,7 +2,7 @@
 
 A Windows- and OS X-compatible Python script that fetches, from Apple's or your software update server, the Boot Camp ESD ("Electronic Software Distribution") for a specific model of Mac. It unpacks the multiple layers of archives within the flat package and if the script is run on Windows with the `--install` option, it also runs the 64-bit MSI installer.
 
-On Windows, the archives are unpacked using [7-Zip](http://www.7-zip.org) and [dmg2img](http://vu1tur.eu.org/tools), so these are downloaded and installed (and removed later) as needed. 7-Zip can convert .dmgs to ISOs as well, however I experienced inconsistent results across different currently-offered BootCampESD.pkgs, and haven't had any issues with dmg2img. More details on the extraction on Windows can be found below.
+On Windows, the archives are unpacked using [7-Zip](http://www.7-zip.org), and the 7-Zip MSI is downloaded and installed, and removed later if Brigadier installed it. This tool used to use [dmg2img](http://vu1tur.eu.org/tools/) to perform the extraction of files from Apple's `WindowsSupport.dmg` file, but more recent versions of 7-Zip have included more completely support for DMGs, so dmg2img seems to be no longer needed.
 
 This was written for two reasons:
 
@@ -83,17 +83,15 @@ If you'd rather build it yourself, you can use the included build script. It req
 On OS X, we have the native hdiutil and pkgutil commands to do the work of unpacking the driver files. On Windows, we:
 
 1. Check if 7-Zip is already installed - if not, we download and install it
-2. Download dmg2iso and store it in a temporary directory
 2. Extract the BootCampESD.pkg xar archive with 7-Zip
 3. Extract the Payload archive with 7-Zip, once to decompress gzip and again to unpack the cpio archive
-4. Use dmg2iso to convert the resultant WindowsSupport.dmg to an ISO
-5. Use 7-Zip to extract the driver files from the ISO
-6. Uninstall 7-Zip if we installed it
+4. Use 7-Zip to extract the driver files from the `WindowsSupport.dmg` file within the pkg
+5. Uninstall 7-Zip if we installed it
 
 ## Caveats
 
 * It requires a network connection, which therefore requires that a working network driver be available. The simplest way I've found to do this is to place the various network drivers from BootCampESDs inside a "BootCamp" (or similar) folder within `C:\Windows\INF` on a sysprepped image. This folder is the default search location for device drivers, and it should automatically detect and install drivers located here for all unknown hardware. You can also modify the `DevicePath` <a href="http://technet.microsoft.com/en-us/library/cc731664(v=ws.10).aspx">registry key</a> to add a custom location, but using the existing `INF` folder means no other changes besides a file copy are required to update an existing image's drivers, so this can be done without actually restoring the image and booting it just to install a driver. Offline driver servicing using Windows and DISM is easy for WIM images, but most admins are likely not deploying WIM images to Macs, but rather using tools that wrap ntfsprogs.
 * It currently performs almost no error handling.
-* The 7-Zip and dmg2iso tools download from URLs hardcoded in the script. Soon the `brigadier.plist` will support overriding these URLs with your own copies stored on a private webserver.
-* After installation, it sets the `FirstTimeRun` registry key at `HKEY_CURRENT_USER\Software\Apple Inc.\Apple Keyboard Support` to disable the first-launch Boot Camp help popup, and there's currently no option to disable this behaviour. 
+* The 7-Zip downloads from a public URLs which is hardcoded in the script. Soon the `brigadier.plist` will support overriding these URLs with your own copies stored on a private webserver.
+* After installation, it sets the `FirstTimeRun` registry key at `HKEY_CURRENT_USER\Software\Apple Inc.\Apple Keyboard Support` to disable the first-launch Boot Camp help popup, and there's currently no option to disable this behaviour.
 * Only supports installations on 64-bit Windows. It's worth mentioning that the December 2012 Boot Camp driver ESDs seem to be 64-bit only, so extra work would need to be done to support 32-bit Windows. If 32-bit Windows support is important to you, there is an [issue](https://github.com/timsutton/brigadier/issues/2) created to track it.

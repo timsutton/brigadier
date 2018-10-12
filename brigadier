@@ -147,7 +147,7 @@ according to the post date.")
         output_dir = opts.output_dir
     else:
         output_dir = os.getcwd()
-        if output_dir.endswith('ystem32'):
+        if output_dir.endswith('ystem32') or '\\system32\\' in output_dir.lower():
             output_dir = os.environ['SystemDrive'] + "\\"
             status("Changing output directory to %s to work around an issue \
 when running the installer out of 'system32'." % output_dir)

@@ -27,9 +27,12 @@ if ([decimal](Get-ItemProperty $7z).VersionInfo.FileVersion -lt 15.14) {
 [xml]$sucatalog = Invoke-WebRequest -Uri $SUCATALOG_URL -Method Get -ErrorAction Stop
 $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } | ForEach-Object {
     # Search dist files to find supported models, using regex match to find models in dist files - stole regex from brigadier's source
-    $SupportedModels = [regex]::Matches((Invoke-RestMethod -Uri ($_.dict | Where-Object { $_.Key -match "English" }).String).InnerXml,"([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])").Value
+    $modelRegex = "([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])"
+    $distURL = ($_.dict | Where-Object { $_.Key -match "English" }).String
+    $distXML = (Invoke-RestMethod -Uri $distURL).InnerXml
+    $SupportedModels = [regex]::Matches($distXML,$modelRegex).Value
     if ($SupportedModels -contains $Model) { 
-        $version = [regex]::Match(($_.dict | Where-Object { $_.Key -match "English" }).String,"(\d{3}-\d{5})").Value
+        $version = [regex]::Match($distURL,"(\d{3}-\d{5})").Value
         Write-Output "Found supported ESD: $Version"
         [array]$bootcamplist += $_ 
     }
@@ -40,6 +43,7 @@ if ($bootcamplist.Length -gt 1) {
 $esd = $bootcamplist | Sort-Object -Property Date | Select-Object -Last 1
 # Build a hash table of the package's properties from the XML
 $package = $esd.array.dict.selectnodes('key') | ForEach-Object {@{$($_.'#text') = $($_.nextsibling.'#text')}}
+$package += @{'ESDVersion' = $Version}
 $download = $package.URL
 
 # Download the BootCamp ESD

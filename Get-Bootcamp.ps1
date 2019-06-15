@@ -36,13 +36,11 @@ $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } |
 }
 if ($bootcamplist.Length -gt 1) { 
     Write-warning "Found more than 1 supported Bootcamp ESD. Selecting newest based on posted date which may not always be correct"
-    $bootcamplist | ForEach-Object { 
-        if ($_.date -gt $latestdate) { 
-            $latestdate = $_.date
-            $download = $_.array.dict.string | Where-Object { $_ -match '.pkg' }
-        }
-    }
-} else { $download = $bootcamplist.array.dict.string | Where-Object { $_ -match '.pkg' }}
+}
+$esd = $bootcamplist | Sort-Object -Property Date | Select-Object -Last 1
+# Build a hash table of the package's properties from the XML
+$package = $esd.array.dict.selectnodes('key') | ForEach-Object {@{$($_.'#text') = $($_.nextsibling.'#text')}}
+$download = $package.URL
 
 # Download the BootCamp ESD
 Start-BitsTransfer -Source $download -Destination "$OutputDir\BootCampESD.pkg" -ErrorAction Stop

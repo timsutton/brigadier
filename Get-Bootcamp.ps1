@@ -18,7 +18,7 @@ if (!(Test-Path $OutputDir)) { New-Item -Path $OutputDir -ItemType Directory -Fo
 # Check if at least 7zip 15.14 is installed. If not, download and install it.
 $7z = "$env:ProgramFiles\7-Zip\7z.exe"
 if (Test-Path $7z) { $7zInstalled = $true }
-if ([decimal](Get-ItemProperty $7z).VersionInfo.FileVersion -lt 15.14) {
+if ([version](Get-ItemProperty $7z).VersionInfo.FileVersion -lt 15.14) {
     Invoke-WebRequest -Uri $SEVENZIP_URL -OutFile "$OutputDir\$($SEVENZIP_URL.Split('/')[-1])" -ErrorAction Stop
     Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/i $OutputDir\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait -Verbose
 }

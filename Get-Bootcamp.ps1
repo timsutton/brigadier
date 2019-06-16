@@ -62,7 +62,11 @@ $packagePath = Join-Path $workingDir 'BootCampESD.pkg'
 $payloadPath = Join-Path $workingDir 'Payload~'
 $dmgPath = Join-Path $workingDir 'WindowsSupport.dmg'
 
-if (-not (Test-Path -PathType Container $landingDir)) {mkdir $landingDir > $null}
+if (Test-Path -PathType Container $landingDir) {
+    # Python just deletes the folder
+    Write-Warning "Final destination folder $landingDir already exists, please remove it to redownload."
+    exit 1
+}
 if (-not (Test-Path -PathType Container $workingDir)) {mkdir $workingDir > $null}
 
 Write-Host "Starting download from $($package.URL)"
@@ -74,6 +78,7 @@ if (Test-Path -Path "$packagePath") {
     Invoke-Command -ScriptBlock { 
         & $7z -o"$workingDir" -y e "$packagePath"
         & $7z -o"$workingDir" -y e "$payloadPath"
+        if (-not (Test-Path -PathType Container $landingDir)) {mkdir $landingDir > $null}
         & $7z -o"$landingDir" -y x "$dmgPath"
         # # If just downloading, put the extracted installers on the desktop
         # if ($Install) {

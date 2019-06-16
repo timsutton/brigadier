@@ -55,7 +55,6 @@ $package = $esd.array.dict.selectnodes('key') | ForEach-Object {@{$($_.'#text') 
 $package += @{'ESDVersion' = $Version}
 Write-Host "Selected $($package.ESDVersion) as it's the most recently posted."
 
-# Download the BootCamp ESD
 $landingDir = Join-Path $OutputDir "BootCamp-$($package.ESDVersion)"
 $workingDir = Join-Path $env:Temp "BootCamp-unpack-$($package.ESDVersion)"
 $packagePath = Join-Path $workingDir 'BootCampESD.pkg'
@@ -69,9 +68,20 @@ if (Test-Path -PathType Container $landingDir) {
 }
 if (-not (Test-Path -PathType Container $workingDir)) {mkdir $workingDir > $null}
 
-Write-Host "Starting download from $($package.URL)"
-Start-BitsTransfer -Source $package.URL -Destination "$packagePath" -ErrorAction Stop
-Write-Host "Download complete"
+# Download the BootCamp ESD if required
+if (-not (Test-Path -PathType Leaf $packagePath)) {
+    Write-Host "Starting download from $($package.URL)"
+    Start-BitsTransfer -Source $package.URL -Destination "$packagePath" -ErrorAction Stop
+    Write-Host "Download complete"
+} else {
+    # Not sure what's used for the digest, but we can match size.
+    if ((Get-Item $packagePath | Select -ExpandProperty Length) -eq $package.Size) {
+        Write-Host "$($package.ESDVersion) already exists at $packagePath, not redownloading."
+    } else {
+        Write-Warning "A file already exists at $packagePath but does not match $($package.URL), please remove it."
+        exit 1
+    }
+}
 if (Test-Path -Path "$packagePath") {
     # Extract the bootcamp installer
     Write-Host "Extracting..."

@@ -82,24 +82,13 @@ if (-not (Test-Path -PathType Leaf $packagePath)) {
         exit 1
     }
 }
-if (Test-Path -Path "$packagePath") {
-    # Extract the bootcamp installer
-    Write-Host "Extracting..."
-    Invoke-Command -ScriptBlock { 
-        & $7z -o"$workingDir" -y e "$packagePath"
-        & $7z -o"$workingDir" -y e "$payloadPath"
-        if (-not (Test-Path -PathType Container $landingDir)) {mkdir $landingDir > $null}
-        & $7z -o"$landingDir" -y x "$dmgPath"
-        # # If just downloading, put the extracted installers on the desktop
-        # if ($Install) {
-        #     & $7z -o"$OutputDir" -y x "$dmgPath"
-        # }
-        # else {
-        #     if ($OutputDir -eq "$env:TEMP") { & $7z -o"$env:USERPROFILE\Desktop\$version" -y x "$dmgPath" } else { & $7z -o"$OutputDir" -y x "$dmgPath" }
-        # }
-    }
-}
-else { Write-Warning "BootCampESD.pkg could not be found"; exit }
+
+# Extract the bootcamp installer
+Write-Host "Extracting..."
+& $7z -o"$workingDir" -y e "$packagePath"
+& $7z -o"$workingDir" -y e "$payloadPath"
+if (-not (Test-Path -PathType Container $landingDir)) {mkdir $landingDir > $null}
+& $7z -o"$landingDir" -y x "$dmgPath"
 
 # Uninstall 7zip if we installed it
 if ($7zInstalled -ne $true) { Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/x $env:Temp\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait }

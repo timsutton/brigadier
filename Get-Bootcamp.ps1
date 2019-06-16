@@ -106,4 +106,6 @@ if ($Install) {
     do { Write-Output "Sleeping 20 seconds"; Start-Sleep -Seconds 20 } while (Get-Process -Name "msiexec" -ErrorAction SilentlyContinue)
     if (-not $KeepFiles) { Remove-Item -Path "$landingDir" -Recurse -Force -ErrorAction SilentlyContinue }
 }
-else { exit }
+
+Write-Host "Cleaning up working directory..."
+Remove-Item -Path $workingDir -Recurse

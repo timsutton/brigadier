@@ -41,9 +41,14 @@ $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } |
         [array]$bootcamplist += $_ 
     }
 }
+
 if ($bootcamplist.Length -gt 1) { 
     Write-Host "Found more than 1 supported Bootcamp ESD. Selecting newest based on posted date which may not always be correct"
+} elseif ($bootcamplist.length -eq 0) {
+    Write-Warning "Couldn't find a Boot Camp ESD for the model $Model in the given software update catalog."
+    exit 1
 }
+
 $esd = $bootcamplist | Sort-Object -Property Date | Select-Object -Last 1
 # Build a hash table of the package's properties from the XML
 $package = $esd.array.dict.selectnodes('key') | ForEach-Object {@{$($_.'#text') = $($_.nextsibling.'#text')}}

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 Param(
-    [string]$Model = (Get-WmiObject -Class Win32_ComputerSystem).Model,
+    [string]$Model = (Get-CimInstance -Class Win32_ComputerSystem).Model,
     [switch]$Install,
     [string]$OutputDir = $PWD,
     [switch]$KeepFiles,
@@ -37,10 +37,10 @@ $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } |
     $distURL = ($_.dict | Where-Object { $_.Key -match "English" }).String
     $distXML = (Invoke-RestMethod -Uri $distURL).InnerXml
     $SupportedModels = [regex]::Matches($distXML,$modelRegex).Value
-    if ($SupportedModels -contains $Model) { 
+    if ($SupportedModels -contains $Model) {
         $_ | Add-Member -NotePropertyName Version -NotePropertyValue ([regex]::Match($distURL,"(\d{3}-\d{4,5})").Value)
         Write-Output "Found supported ESD: $($_.Version), posted $($_.Date)"
-        $bootcamplist += $_ 
+        $bootcamplist += $_
     }
 }
 
@@ -49,7 +49,7 @@ if ($ProductId) {
     $bootcamplist = $bootcamplist | Where-Object {$_.Version -in $ProductId}
 }
 
-if ($bootcamplist.Length -gt 1) { 
+if ($bootcamplist.Length -gt 1) {
     Write-Host "Found more than 1 supported Bootcamp ESD. Selecting newest based on posted date which may not always be correct"
 } elseif ($bootcamplist.length -eq 0) {
     Write-Warning "Couldn't find a Boot Camp ESD for the model $Model in the given software update catalog."
@@ -82,7 +82,7 @@ if (-not (Test-Path -PathType Leaf $packagePath)) {
     Write-Host "Download complete"
 } else {
     # Not sure what's used for the digest, but we can match size.
-    if ((Get-Item $packagePath | Select -ExpandProperty Length) -eq $package.Size) {
+    if ((Get-Item $packagePath | Select-Object -ExpandProperty Length) -eq $package.Size) {
         Write-Host "$($package.ESDVersion) already exists at $packagePath, not redownloading."
     } else {
         Write-Warning "A file already exists at $packagePath but does not match $($package.URL), please remove it."
@@ -105,7 +105,7 @@ if ($7zInstalled -ne $true) {
 }
 
 # Install Bootcamp and use MST if specified (I uploaded one that I had to use to fix the latest ESD on an iMac14,1)
-if ($Install) { 
+if ($Install) {
     # Install Bootcamp
     $scaction = New-ScheduledTaskAction -Execute "msiexec.exe" -Argument "/i $landingDir\Bootcamp\Drivers\Apple\BootCamp.msi /qn /norestart"
     $sctrigger = New-ScheduledTaskTrigger -At ((Get-Date).AddSeconds(15)) -Once

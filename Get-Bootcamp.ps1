@@ -2,7 +2,7 @@
 Param(
     [string]$Model = (Get-WmiObject -Class Win32_ComputerSystem).Model,
     [switch]$Install,
-    [string]$OutputDir = "$env:TEMP",
+    [string]$OutputDir = $PWD,
     [switch]$KeepFiles,
     [array]$ProductId,
     [string]$SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog',
@@ -20,7 +20,7 @@ $7z = "$env:ProgramFiles\7-Zip\7z.exe"
 if (Test-Path $7z) { $7zInstalled = $true }
 if ([version](Get-ItemProperty $7z).VersionInfo.FileVersion -lt 15.14) {
     Write-Host "7-Zip not installed, will install and remove."
-    Invoke-WebRequest -Uri $SEVENZIP_URL -OutFile "$OutputDir\$($SEVENZIP_URL.Split('/')[-1])" -ErrorAction Stop
+    Invoke-WebRequest -Uri $SEVENZIP_URL -OutFile "$env:Temp\$($SEVENZIP_URL.Split('/')[-1])" -ErrorAction Stop
     Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/i $OutputDir\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait -Verbose
 }
 
@@ -56,41 +56,49 @@ $package += @{'ESDVersion' = $Version}
 Write-Host "Selected $($package.ESDVersion) as it's the most recently posted."
 
 # Download the BootCamp ESD
+$landingDir = Join-Path $OutputDir "BootCamp-$($package.ESDVersion)"
+$workingDir = Join-Path $env:Temp "BootCamp-unpack-$($package.ESDVersion)"
+$packagePath = Join-Path $workingDir 'BootCampESD.pkg'
+$payloadPath = Join-Path $workingDir 'Payload~'
+$dmgPath = Join-Path $workingDir 'WindowsSupport.dmg'
+
+if (-not (Test-Path -PathType Container $landingDir)) {mkdir $landingDir > $null}
+if (-not (Test-Path -PathType Container $workingDir)) {mkdir $workingDir > $null}
+
 Write-Host "Starting download from $($package.URL)"
-Start-BitsTransfer -Source $package.URL -Destination "$OutputDir\BootCampESD.pkg" -ErrorAction Stop
+Start-BitsTransfer -Source $package.URL -Destination "$packagePath" -ErrorAction Stop
 Write-Host "Download complete"
-if (Test-Path -Path "$OutputDir\BootCampESD.pkg") {
+if (Test-Path -Path "$packagePath") {
     # Extract the bootcamp installer
     Write-Host "Extracting..."
     Invoke-Command -ScriptBlock { 
-        & $7z -o"$OutputDir" -y e "$OutputDir\BootCampESD.pkg"
-        & $7z -o"$OutputDir" -y e "$OutputDir\Payload~"
-        # If just downloading, put the extracted installers on the desktop
-        if ($Install) {
-            & $7z -o"$OutputDir" -y x "$OutputDir\WindowsSupport.dmg"
-        }
-        else {
-            if ($OutputDir -eq "$env:TEMP") { & $7z -o"$env:USERPROFILE\Desktop\$version" -y x "$OutputDir\WindowsSupport.dmg" } else { & $7z -o"$OutputDir" -y x "$OutputDir\WindowsSupport.dmg" }
-        }
+        & $7z -o"$workingDir" -y e "$packagePath"
+        & $7z -o"$workingDir" -y e "$payloadPath"
+        & $7z -o"$landingDir" -y x "$dmgPath"
+        # # If just downloading, put the extracted installers on the desktop
+        # if ($Install) {
+        #     & $7z -o"$OutputDir" -y x "$dmgPath"
+        # }
+        # else {
+        #     if ($OutputDir -eq "$env:TEMP") { & $7z -o"$env:USERPROFILE\Desktop\$version" -y x "$dmgPath" } else { & $7z -o"$OutputDir" -y x "$dmgPath" }
+        # }
     }
-    }
+}
 else { Write-Warning "BootCampESD.pkg could not be found"; exit }
 
 # Uninstall 7zip if we installed it
-if ($7zInstalled -ne $true) { Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/x $OutputDir\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait }
+if ($7zInstalled -ne $true) { Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/x $env:Temp\$($SEVENZIP_URL.Split('/')[-1]) /qb- /norestart" -Wait }
 
 # Install Bootcamp and use MST if specified (I uploaded one that I had to use to fix the latest ESD on an iMac14,1)
 if ($Install) { 
     # Install Bootcamp
-    $scaction = New-ScheduledTaskAction -Execute "msiexec.exe" -Argument "/i $OutputDir\Bootcamp\Drivers\Apple\BootCamp.msi /qn /norestart"
+    $scaction = New-ScheduledTaskAction -Execute "msiexec.exe" -Argument "/i $landingDir\Bootcamp\Drivers\Apple\BootCamp.msi /qn /norestart"
     $sctrigger = New-ScheduledTaskTrigger -At ((Get-Date).AddSeconds(15)) -Once
     $scprincipal = New-ScheduledTaskPrincipal "SYSTEM" -RunLevel Highest
     $scsettings = New-ScheduledTaskSettingsSet
     $sctask = New-ScheduledTask -Action $scaction -Principal $scprincipal -Trigger $sctrigger -Settings $scsettings
     Register-ScheduledTask "Install Bootcamp" -InputObject $sctask -User "SYSTEM"
     do { Write-Output "Sleeping 20 seconds"; Start-Sleep -Seconds 20 } while (Get-Process -Name "msiexec" -ErrorAction SilentlyContinue)
+    if (-not $KeepFiles) { Remove-Item -Path "$landingDir" -Recurse -Force -ErrorAction SilentlyContinue }
 }
 else { exit }
-
-# Clean up
-if ($KeepFiles) { exit } else { Remove-Item -Path "$OutputDir\*" -Recurse -Force -ErrorAction SilentlyContinue }

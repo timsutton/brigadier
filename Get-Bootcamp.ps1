@@ -29,6 +29,7 @@ Write-Host "Using model: $Model"
 
 # Read data from sucatalog and find all Bootcamp ESD's
 Write-Host "Downloading software update catalog..."
+$bootcamplist = @()
 [xml]$sucatalog = Invoke-WebRequest -Uri $SUCATALOG_URL -Method Get -ErrorAction Stop
 $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } | ForEach-Object {
     # Search dist files to find supported models, using regex match to find models in dist files - stole regex from brigadier's source
@@ -37,10 +38,15 @@ $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } |
     $distXML = (Invoke-RestMethod -Uri $distURL).InnerXml
     $SupportedModels = [regex]::Matches($distXML,$modelRegex).Value
     if ($SupportedModels -contains $Model) { 
-        $version = [regex]::Match($distURL,"(\d{3}-\d{4,5})").Value
-        Write-Output "Found supported ESD: $Version, posted $($_.Date)"
-        [array]$bootcamplist += $_ 
+        $_ | Add-Member -NotePropertyName Version -NotePropertyValue ([regex]::Match($distURL,"(\d{3}-\d{4,5})").Value)
+        Write-Output "Found supported ESD: $($_.Version), posted $($_.Date)"
+        $bootcamplist += $_ 
     }
+}
+
+if ($ProductId) {
+    Write-Host "ProductID specified, filtering Boot Camp ESD selection to match."
+    $bootcamplist = $bootcamplist | Where-Object {$_.Version -in $ProductId}
 }
 
 if ($bootcamplist.Length -gt 1) { 
@@ -53,7 +59,7 @@ if ($bootcamplist.Length -gt 1) {
 $esd = $bootcamplist | Sort-Object -Property Date | Select-Object -Last 1
 # Build a hash table of the package's properties from the XML
 $package = $esd.array.dict.selectnodes('key') | ForEach-Object {@{$($_.'#text') = $($_.nextsibling.'#text')}}
-$package += @{'ESDVersion' = $Version}
+$package += @{'ESDVersion' = $($esd.Version)}
 Write-Host "Selected $($package.ESDVersion) as it's the most recently posted."
 
 $landingDir = Join-Path $OutputDir "BootCamp-$($package.ESDVersion)"

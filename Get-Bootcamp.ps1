@@ -1,12 +1,56 @@
-[CmdletBinding()]
+<#
+.SYNOPSIS
+    Fetch and install Boot Camp ESDs with ease.
+.DESCRIPTION
+    Download and unpack Boot Camp drivers and support software from Apple or your software update servers for specified Mac models.
+
+    Can also install drivers and software if used with the "-Install" parameter.
+.EXAMPLE
+    Get-Bootcamp.ps1
+    Download and unpack the ESD that applies to current computer's model to the current working directory.
+
+.EXAMPLE
+    Get-Bootcamp.ps1 -Model 'MacBookAir5,2'
+    Download and unpack the ESD for a specific model to the current working directory.
+
+.EXAMPLE
+    Get-Bootcamp.ps1 -Install
+    Download, unpack, and install drivers for the current computer, deleting the drivers after installation.
+.NOTES
+    This is a PowerShell port of timsutton's original Python script https://github.com/timsutton/brigadier/
+.LINK
+    https://github.com/timsutton/brigadier/
+#>
+
+[CmdletBinding(DefaultParameterSetName='Download')]
 Param(
+    # Model identifier to use, defaulting to the current machine's model.
+    [Parameter(ParameterSetName='Download')]
     [string]$Model = (Get-CimInstance -Class Win32_ComputerSystem).Model,
+
+    # After the installer is downloaded, perform the install automatically.
+    [Parameter(ParameterSetName='Install',
+        Mandatory=$true
+        )]
     [switch]$Install,
+
+    # Directory to extract installer files to. Defaults to the current directory.
     [string]$OutputDir = $PWD,
+
+    # Keep the files that were downloaded/extracted after installing/
+    [Parameter(ParameterSetName='Install')]
     [switch]$KeepFiles,
+
+    # Specify an exact product ID to download.
     [array]$ProductId,
-    [string]$SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog',
-    [string]$SEVENZIP_URL = 'http://www.7-zip.org/a/7z1604-x64.msi'
+
+    # URL for software update catalog to use, eg for an intenal Software Update Service or Reposado
+    [Alias('SUCATALOG_URL')]
+    [string]$CatalogURL = 'https://swscan.apple.com/content/catalogs/others/index-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog',
+    
+    # URL to download 7-Zip from, if not installed
+    [Alias('SEVENZIP_URL')]
+    [string]$SevenZipURL = 'https://www.7-zip.org/a/7z1900-x64.exe'
 )
 
 # Disable Invoke-WebRequest progress bar to speed up download due to bug
@@ -17,11 +61,11 @@ if (!(Test-Path $OutputDir)) { New-Item -Path $OutputDir -ItemType Directory -Fo
 
 # Check if at least 7zip 15.14 is installed. If not, download and install it.
 $7z = "$env:ProgramFiles\7-Zip\7z.exe"
-$7zDownload = Join-Path $env:Temp $SEVENZIP_URL.Split('/')[-1]
+$7zDownload = Join-Path $env:Temp $SevenZipURL.Split('/')[-1]
 if (Test-Path $7z) { $7zInstalled = $true }
 if ([version](Get-ItemProperty $7z).VersionInfo.FileVersion -lt 15.14) {
     Write-Host "7-Zip not installed, will install and remove."
-    Invoke-WebRequest -Uri $SEVENZIP_URL -OutFile $7zDownload -ErrorAction Stop
+    Invoke-WebRequest -Uri $SevenZipURL -OutFile $7zDownload -ErrorAction Stop
     Start-Process -FilePath $env:SystemRoot\System32\msiexec.exe -ArgumentList "/i $7zDownload /qb- /norestart" -Wait -Verbose
 }
 
@@ -30,7 +74,7 @@ Write-Host "Using model: $Model"
 # Read data from sucatalog and find all Bootcamp ESD's
 Write-Host "Downloading software update catalog..."
 $bootcamplist = @()
-[xml]$sucatalog = Invoke-WebRequest -Uri $SUCATALOG_URL -Method Get -ErrorAction Stop
+[xml]$sucatalog = Invoke-WebRequest -Uri $CatalogURL -Method Get -ErrorAction Stop
 $sucatalog.plist.dict.dict.dict | Where-Object { $_.String -match "Bootcamp" } | ForEach-Object {
     # Search dist files to find supported models, using regex match to find models in dist files - stole regex from brigadier's source
     $modelRegex = "([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])"

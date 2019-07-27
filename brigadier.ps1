@@ -6,15 +6,15 @@
 
     Can also install drivers and software if used with the "-Install" parameter.
 .EXAMPLE
-    Get-Bootcamp.ps1
+    brigadier.ps1
     Download and unpack the ESD that applies to current computer's model to the current working directory.
 
 .EXAMPLE
-    Get-Bootcamp.ps1 -Model 'MacBookAir5,2'
+    brigadier.ps1 -Model 'MacBookAir5,2'
     Download and unpack the ESD for a specific model to the current working directory.
 
 .EXAMPLE
-    Get-Bootcamp.ps1 -Install
+    brigadier.ps1 -Install
     Download, unpack, and install drivers for the current computer, deleting the drivers after installation.
 .NOTES
     This is a PowerShell port of timsutton's original Python script https://github.com/timsutton/brigadier/

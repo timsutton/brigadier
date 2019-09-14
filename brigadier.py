@@ -1,19 +1,11 @@
-#!/usr/bin/python
-
-import os
-import sys
-import subprocess
-import urllib2
-import plistlib
-import re
-import tempfile
-import shutil
-import optparse
-import datetime
-import platform
+import os,sys,subprocess,re,tempfile,shutil,optparse,datetime,platform,plistlib
+if sys.version_info >= (3,0):
+    from urllib.request import urlopen, urlretrieve, Request
+else:
+    from urllib2 import urlopen, Request
+    from urllib import urlretrieve
 
 from pprint import pprint
-from urllib import urlretrieve
 from xml.dom import minidom
 
 SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
@@ -21,12 +13,24 @@ SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.
 SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
 
 def status(msg):
-    print "%s\n" % msg
+    print("{}\n".format(msg))
 
 def getCommandOutput(cmd):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, err = p.communicate()
     return out
+
+def load_plist(fp):
+    if sys.version_info >= (3,0):
+        return plistlib.load(fp)
+    else:
+        return plistlib.readPlist(fp)
+
+def loads_plist(s):
+    if sys.version_info >= (3,0):
+        return plistlib.loads(s)
+    else:
+        return plistlib.readPlistFromString(s)
 
 # Returns this machine's model identifier, using wmic on Windows,
 # system_profiler on OS X
@@ -40,9 +44,43 @@ def getMachineModel():
         model = nodes[0].data
     elif platform.system() == 'Darwin':
         plistxml = getCommandOutput(['system_profiler', 'SPHardwareDataType', '-xml'])
-        plist = plistlib.readPlistFromString(plistxml)
+        plist = loads_plist(plistxml)
         model = plist[0]['_items'][0]['machine_model']
     return model
+
+def get_size(size, suffix=None, use_1024=False, round_to=2, strip_zeroes=False):
+    # size is the number of bytes
+    # suffix is the target suffix to locate (B, KB, MB, etc) - if found
+    # use_2014 denotes whether or not we display in MiB vs MB
+    # round_to is the number of dedimal points to round our result to (0-15)
+    # strip_zeroes denotes whether we strip out zeroes 
+
+    # Failsafe in case our size is unknown
+    if size == -1:
+        return "Unknown"
+    # Get our suffixes based on use_1024
+    ext = ["B","KiB","MiB","GiB","TiB","PiB"] if use_1024 else ["B","KB","MB","GB","TB","PB"]
+    div = 1024 if use_1024 else 1000
+    s = float(size)
+    s_dict = {} # Initialize our dict
+    # Iterate the ext list, and divide by 1000 or 1024 each time to setup the dict {ext:val}
+    for e in ext:
+        s_dict[e] = s
+        s /= div
+    # Get our suffix if provided - will be set to None if not found, or if started as None
+    suffix = next((x for x in ext if x.lower() == suffix.lower()),None) if suffix else suffix
+    # Get the largest value that's still over 1
+    biggest = suffix if suffix else next((x for x in ext[::-1] if s_dict[x] >= 1), "B")
+    # Determine our rounding approach - first make sure it's an int; default to 2 on error
+    try:round_to=int(round_to)
+    except:round_to=2
+    round_to = 0 if round_to < 0 else 15 if round_to > 15 else round_to # Ensure it's between 0 and 15
+    bval = round(s_dict[biggest], round_to)
+    # Split our number based on decimal points
+    a,b = str(bval).split(".")
+    # Check if we need to strip or pad zeroes
+    b = b.rstrip("0") if strip_zeroes else b.ljust(round_to,"0") if round_to > 0 else ""
+    return "{:,}{} {}".format(int(a),"" if not b else "."+b,biggest)
 
 def downloadFile(url, filename):
     # http://stackoverflow.com/questions/13881092/
@@ -51,13 +89,15 @@ def downloadFile(url, filename):
         readsofar = blocknum * blocksize
         if totalsize > 0:
             percent = readsofar * 1e2 / totalsize
-            console_out = "\r%5.1f%% %*d / %d bytes" % (
-                percent, len(str(totalsize)), readsofar, totalsize)
+            t_size = get_size(totalsize)
+            r_size = get_size(readsofar,suffix=t_size.split(" ")[-1])
+            console_out = "\r{:.2f}% {} / {}".format(
+                percent, r_size, t_size)
             sys.stderr.write(console_out)
             if readsofar >= totalsize: # near the end
                 sys.stderr.write("\n")
         else: # total size is unknown
-            sys.stderr.write("read %d\n" % (readsofar,))
+            sys.stderr.write("read {}\n".format(readsofar))
 
     urlretrieve(url, filename, reporthook=reporthook)
 
@@ -69,10 +109,10 @@ def sevenzipExtract(arcfile, command='e', out_dir=None):
     cmd.append("-o" + out_dir)
     cmd.append("-y")
     cmd.append(arcfile)
-    status("Calling 7-Zip command: %s" % ' '.join(cmd))
+    status("Calling 7-Zip command: {}".format(' '.join(cmd)))
     retcode = subprocess.call(cmd)
     if retcode:
-        sys.exit("Command failure: %s exited %s." % (' '.join(cmd), retcode))
+        sys.exit("Command failure: {} exited {}.".format(' '.join(cmd), retcode))
 
 def postInstallConfig():
     regdata = """Windows Registry Editor Version 5.00
@@ -102,12 +142,12 @@ def findBootcampMSI(search_dir):
 def installBootcamp(msipath):
     logpath = os.path.abspath("/BootCamp_Install.log")
     cmd = ['cmd', '/c', 'msiexec', '/i', msipath, '/qb-', '/norestart', '/log', logpath]
-    status("Executing command: '%s'" % " ".join(cmd))
+    status("Executing command: '{}'".format(" ".join(cmd)))
     subprocess.call(cmd)
     status("Install log output:")
     with open(logpath, 'r') as logfd:
         logdata = logfd.read()
-        print logdata.decode('utf-16')
+        print(logdata.decode('utf-16'))
     postInstallConfig()
     
 def main():
@@ -141,16 +181,15 @@ according to the post date.")
 
     if opts.output_dir:
         if not os.path.isdir(opts.output_dir):
-            sys.exit("Output directory %s that was specified doesn't exist!" % opts.output_dir)
+            sys.exit("Output directory {} that was specified doesn't exist!".format(opts.output_dir))
         if not os.access(opts.output_dir, os.W_OK):
-            sys.exit("Output directory %s is not writable by this user!" % opts.output_dir)
+            sys.exit("Output directory {} is not writable by this user!".format(opts.output_dir))
         output_dir = opts.output_dir
     else:
         output_dir = os.getcwd()
         if output_dir.endswith('ystem32') or '\\system32\\' in output_dir.lower():
             output_dir = os.environ['SystemDrive'] + "\\"
-            status("Changing output directory to %s to work around an issue \
-when running the installer out of 'system32'." % output_dir)
+            status("Changing output directory to {} to work around an issue when running the installer out of 'system32'.".format(output_dir))
 
     if opts.keep_files and not opts.install:
         sys.exit("The --keep-files option is only useful when used with --install option!")
@@ -163,9 +202,9 @@ when running the installer out of 'system32'." % output_dir)
     else:
         models = [getMachineModel()]
     if len(models) > 1:
-        status("Using Mac models: %s." % ', '.join(models))
+        status("Using Mac models: {}.".format(', '.join(models)))
     else:
-        status("Using Mac model: %s." % ', '.join(models))        
+        status("Using Mac model: {}.".format(', '.join(models)))        
 
     for model in models:
         sucatalog_url = SUCATALOG_URL
@@ -174,18 +213,19 @@ when running the installer out of 'system32'." % output_dir)
         plist_path = os.path.join(scriptdir, 'brigadier.plist')
         if os.path.isfile(plist_path):
             try:
-                config_plist = plistlib.readPlist(plist_path)
+                with open(plist_path, "rb") as f:
+                    config_plist = load_plist(f)
             except:
-                status("Config plist was found at %s but it could not be read. \
-                Verify that it is readable and is an XML formatted plist." % plist_path)
+                status("Config plist was found at {} but it could not be read. \
+                Verify that it is readable and is an XML formatted plist.".format(plist_path))
         if config_plist:
             if 'CatalogURL' in config_plist.keys():
                 sucatalog_url = config_plist['CatalogURL']
 
 
-        urlfd = urllib2.urlopen(sucatalog_url)
+        urlfd = urlopen(sucatalog_url)
         data = urlfd.read()
-        p = plistlib.readPlistFromString(data)
+        p = loads_plist(data)
         allprods = p['Products']
 
         # Get all Boot Camp ESD products
@@ -201,76 +241,76 @@ when running the installer out of 'system32'." % output_dir)
         for bc_prod in bc_prods:
             if 'English' in bc_prod[1]['Distributions'].keys():
                 disturl = bc_prod[1]['Distributions']['English']
-                distfd = urllib2.urlopen(disturl)
-                dist_data = distfd.read()
+                dist_data = urlopen(disturl).read()
+                dist_data = dist_data.decode("utf-8") if sys.version_info >= (3,0) else dist_data
                 if re.search(model, dist_data):
                     supported_models = []
                     pkg_data.append({bc_prod[0]: bc_prod[1]})
                     model_matches_in_dist = re.findall(re_model, dist_data)
                     for supported_model in model_matches_in_dist:
                         supported_models.append(supported_model)
-                    status("Model supported in package distribution file at %s." % disturl)
-                    status("Distribution %s supports the following models: %s." % 
-                        (bc_prod[0], ", ".join(supported_models)))
+                    status("Model supported in package distribution file at {}.".format(disturl))
+                    status("Distribution {} supports the following models: {}.".format(
+                        bc_prod[0], ", ".join(supported_models)))
         
         # Ensure we have only one ESD
         if len(pkg_data) == 0:
-            sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
+            sys.exit("Couldn't find a Boot Camp ESD for the model {} in the given software update catalog.".format(model))
         if len(pkg_data) == 1:
             pkg_data = pkg_data[0]
             if opts.product_id:
                 sys.exit("--product-id option is only applicable when multiple ESDs are found for a model.")
         if len(pkg_data) > 1:
-            # sys.exit("There is more than one ESD product available for this model: %s. "
+            # sys.exit("There is more than one ESD product available for this model: {}. "
             #          "Automically selecting the one with the most recent PostDate.." 
-            #          % ", ".join([p.keys()[0] for p in pkg_data]))
-            print "There is more than one ESD product available for this model:"
+            #         .format(", ".join([p.keys()[0] for p in pkg_data]))
+            print("There is more than one ESD product available for this model:")
             # Init latest to be epoch start
             latest_date = datetime.datetime.fromtimestamp(0)
             chosen_product = None
             for i, p in enumerate(pkg_data):
                 product = p.keys()[0]
                 postdate = p[product].get('PostDate')
-                print "%s: PostDate %s" % (product, postdate)
+                print("{}: PostDate {}".format(product, postdate))
                 if postdate > latest_date:
                     latest_date = postdate
                     chosen_product = product
 
             if opts.product_id:
                 if opts.product_id not in [k.keys()[0] for k in pkg_data]:
-                    sys.exit("Product specified with '--product-id %s' either doesn't exist "
-                             "or was not found applicable to models: %s"
-                             % (opts.product_id, ", ".join(models)))
+                    sys.exit("Product specified with '--product-id {}' either doesn't exist "
+                             "or was not found applicable to models: {}"
+                            .format(opts.product_id, ", ".join(models)))
                 chosen_product = opts.product_id
-                print "Selecting manually-chosen product %s." % chosen_product
+                print("Selecting manually-chosen product {}.".format(chosen_product))
             else:
-                print "Selecting %s as it's the most recently posted." % chosen_product
+                print("Selecting {} as it's the most recently posted.".format(chosen_product))
 
             for p in pkg_data:
                 if p.keys()[0] == chosen_product:
                     selected_pkg = p
             pkg_data = selected_pkg
 
-        pkg_id = pkg_data.keys()[0]
-        pkg_url = pkg_data.values()[0]['Packages'][0]['URL']
+        pkg_id = list(pkg_data)[0]
+        pkg_url = pkg_data[pkg_id]['Packages'][0]['URL']
 
         # make a sub-dir in the output_dir here, named by product
         landing_dir = os.path.join(output_dir, 'BootCamp-' + pkg_id)
         if os.path.exists(landing_dir):
-            status("Final output path %s already exists, removing it..." % landing_dir)
+            status("Final output path {} already exists, removing it...".format(landing_dir))
             if platform.system() == 'Windows':
                 # using rmdir /qs because shutil.rmtree dies on the Doc files with foreign language characters
                 subprocess.call(['cmd', '/c', 'rmdir', '/q', '/s', landing_dir])
             else:
                 shutil.rmtree(landing_dir)
 
-        status("Making directory %s.." % landing_dir)
+        status("Making directory {}..".format(landing_dir))
         os.mkdir(landing_dir)
 
         arc_workdir = tempfile.mkdtemp(prefix="bootcamp-unpack_")
         pkg_dl_path = os.path.join(arc_workdir, pkg_url.split('/')[-1])
 
-        status("Fetching Boot Camp product at URL %s." % pkg_url)
+        status("Fetching Boot Camp product at URL {}.".format(pkg_url))
         downloadFile(pkg_url, pkg_dl_path)
 
         if platform.system() == 'Windows':
@@ -281,10 +321,10 @@ when running the installer out of 'system32'." % output_dir)
                 tempdir = tempfile.mkdtemp()
                 sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
                 downloadFile(SEVENZIP_URL, sevenzip_msi_dl_path)
-                status("Downloaded 7-zip to %s." % sevenzip_msi_dl_path)
+                status("Downloaded 7-zip to {}.".format(sevenzip_msi_dl_path))
                 status("We need to install 7-Zip..")
                 retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])
-                status("7-Zip install returned exit code %s." % retcode)
+                status("7-Zip install returned exit code {}.".format(retcode))
                 we_installed_7zip = True
 
             status("Extracting...")
@@ -320,14 +360,14 @@ when running the installer out of 'system32'." % output_dir)
             output_file = os.path.join(landing_dir, 'WindowsSupport.dmg')
             shutil.move(os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
                 output_file)
-            status("Extracted to %s." % output_file)
+            status("Extracted to {}.".format(output_file))
 
             # If we were to also copy out the contents from the .dmg we might do it like this, but if you're doing this
             # from OS X you probably would rather just burn a disc so we'll stop here..
             # mountxml = getCommandOutput(['/usr/bin/hdiutil', 'attach',
             #     os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
             #     '-mountrandom', '/tmp', '-plist', '-nobrowse'])
-            # mountplist = plistlib.readPlistFromString(mountxml)
+            # mountplist = loads_plist(mountxml)
             # mntpoint = mountplist['system-entities'][0]['mount-point']
             # shutil.copytree(mntpoint, output_dir)
             # subprocess.call(['/usr/bin/hdiutil', 'eject', mntpoint])

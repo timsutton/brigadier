@@ -8,9 +8,12 @@ else:
 from pprint import pprint
 from xml.dom import minidom
 
-SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
+# SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
+SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 # 7-Zip MSI (15.14)
-SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
+# SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
+# 7-Zip MSI (19.00)
+SEVENZIP_URL = 'https://www.7-zip.org/a/7z1900-x64.msi'
 
 def status(msg):
     print("{}\n".format(msg))
@@ -171,6 +174,8 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
         help="Specify an exact product ID to download (ie. '031-0787'), currently useful only for cases \
 where a model has multiple BootCamp ESDs available and is not downloading the desired version \
 according to the post date.")
+    o.add_option('-l', '--latest-version', action="store_true",
+        help="Gets whichever version is latest. This overrides model and product-id if specified.")
 
     opts, args = o.parse_args()
     if opts.install:
@@ -198,9 +203,19 @@ according to the post date.")
         if opts.install:
             status("Ignoring '--model' when '--install' is used. The Boot Camp "
                    "installer won't allow other models to be installed, anyway.")
+        if opts.latest_version:
+            status("Ignoring '--model' when '--latest-version' is used. The Boot Camp "
+                   "installer won't allow other models to be installed, anyway.")
         models = opts.model
     else:
         models = [getMachineModel()]
+    if opts.latest_version:
+        if opts.install:
+            status("Ignoring '--latest-version' when '--install' is used. The Boot Camp "
+                   "installer won't allow other models to be installed, anyway.")
+            opts.latest_version = False
+        else:
+            models = ["All"]
     if len(models) > 1:
         status("Using Mac models: {}.".format(', '.join(models)))
     else:
@@ -223,8 +238,7 @@ according to the post date.")
                 sucatalog_url = config_plist['CatalogURL']
 
 
-        urlfd = urlopen(sucatalog_url)
-        data = urlfd.read()
+        data = urlopen(sucatalog_url).read()
         p = loads_plist(data)
         allprods = p['Products']
 
@@ -243,7 +257,7 @@ according to the post date.")
                 disturl = bc_prod[1]['Distributions']['English']
                 dist_data = urlopen(disturl).read()
                 dist_data = dist_data.decode("utf-8") if sys.version_info >= (3,0) else dist_data
-                if re.search(model, dist_data):
+                if opts.latest_version or re.search(model, dist_data):
                     supported_models = []
                     pkg_data.append({bc_prod[0]: bc_prod[1]})
                     model_matches_in_dist = re.findall(re_model, dist_data)

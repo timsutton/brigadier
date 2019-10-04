@@ -234,7 +234,7 @@ according to the post date.")
                 status("Config plist was found at {} but it could not be read. \
                 Verify that it is readable and is an XML formatted plist.".format(plist_path))
         if config_plist:
-            if 'CatalogURL' in config_plist.keys():
+            if 'CatalogURL' in list(config_plist):
                 sucatalog_url = config_plist['CatalogURL']
 
 
@@ -245,7 +245,7 @@ according to the post date.")
         # Get all Boot Camp ESD products
         bc_prods = []
         for (prod_id, prod_data) in allprods.items():
-            if 'ServerMetadataURL' in prod_data.keys():
+            if 'ServerMetadataURL' in list(prod_data):
                 bc_match = re.search('BootCamp', prod_data['ServerMetadataURL'])
                 if bc_match:
                     bc_prods.append((prod_id, prod_data))
@@ -253,7 +253,7 @@ according to the post date.")
         pkg_data = []
         re_model = "([a-zA-Z]{4,12}[1-9]{1,2}\,[1-6])"
         for bc_prod in bc_prods:
-            if 'English' in bc_prod[1]['Distributions'].keys():
+            if 'English' in list(bc_prod[1]['Distributions']):
                 disturl = bc_prod[1]['Distributions']['English']
                 dist_data = urlopen(disturl).read()
                 dist_data = dist_data.decode("utf-8") if sys.version_info >= (3,0) else dist_data
@@ -277,13 +277,13 @@ according to the post date.")
         if len(pkg_data) > 1:
             # sys.exit("There is more than one ESD product available for this model: {}. "
             #          "Automically selecting the one with the most recent PostDate.." 
-            #         .format(", ".join([p.keys()[0] for p in pkg_data]))
+            #         .format(", ".join([list(p)[0] for p in pkg_data]))
             print("There is more than one ESD product available for this model:")
             # Init latest to be epoch start
             latest_date = datetime.datetime.fromtimestamp(0)
             chosen_product = None
             for i, p in enumerate(pkg_data):
-                product = p.keys()[0]
+                product = list(p)[0]
                 postdate = p[product].get('PostDate')
                 print("{}: PostDate {}".format(product, postdate))
                 if postdate > latest_date:
@@ -291,7 +291,7 @@ according to the post date.")
                     chosen_product = product
 
             if opts.product_id:
-                if opts.product_id not in [k.keys()[0] for k in pkg_data]:
+                if opts.product_id not in [list(k)[0] for k in pkg_data]:
                     sys.exit("Product specified with '--product-id {}' either doesn't exist "
                              "or was not found applicable to models: {}"
                             .format(opts.product_id, ", ".join(models)))
@@ -301,7 +301,7 @@ according to the post date.")
                 print("Selecting {} as it's the most recently posted.".format(chosen_product))
 
             for p in pkg_data:
-                if p.keys()[0] == chosen_product:
+                if list(p)[0] == chosen_product:
                     selected_pkg = p
             pkg_data = selected_pkg
 

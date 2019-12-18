@@ -39,7 +39,8 @@ def loads_plist(s):
 # system_profiler on OS X
 def getMachineModel():
     if platform.system() == 'Windows':
-        rawxml = getCommandOutput(['wmic', 'computersystem', 'get', 'model', '/format:RAWXML'])
+        wmic = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Windows", "System32", "wbem", "WMIC.exe")
+        rawxml = getCommandOutput([wmic, 'computersystem', 'get', 'model', '/format:RAWXML'])
         dom = minidom.parseString(rawxml)
         results = dom.getElementsByTagName("RESULTS")
         nodes = results[0].getElementsByTagName("CIM")[0].getElementsByTagName("INSTANCE")[0]\

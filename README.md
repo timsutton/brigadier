@@ -2,7 +2,7 @@
 
 A Windows- and OS X-compatible Python script that fetches, from Apple's or your software update server, the Boot Camp ESD ("Electronic Software Distribution") for a specific model of Mac. It unpacks the multiple layers of archives within the flat package and if the script is run on Windows with the `--install` option, it also runs the 64-bit MSI installer.
 
-On Windows, the archives are unpacked using [7-Zip](http://www.7-zip.org), and the 7-Zip MSI is downloaded and installed, and removed later if Brigadier installed it. This tool used to use [dmg2img](http://vu1tur.eu.org/tools/) to perform the extraction of files from Apple's `WindowsSupport.dmg` file, but more recent versions of 7-Zip have included more completely support for DMGs, so dmg2img seems to be no longer needed.
+On Windows, the archives are unpacked using [7-Zip](http://www.7-zip.org), and the 7-Zip MSI is downloaded and installed, and removed later if Brigadier installed it. This tool used to use [dmg2img](http://vu1tur.eu.org/tools/) to perform the extraction of files from Apple's `WindowsSupport.dmg` file, but more recent versions of 7-Zip have included more complete support for DMGs, so dmg2img seems to be no longer needed.
 
 This was written for two reasons:
 

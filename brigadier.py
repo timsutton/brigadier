@@ -7,6 +7,7 @@ else:
 
 from pprint import pprint
 from xml.dom import minidom
+import downloader
 
 # SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
@@ -14,6 +15,8 @@ SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-10.14-10
 # SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
 # 7-Zip MSI (19.00)
 SEVENZIP_URL = 'https://www.7-zip.org/a/7z1900-x64.msi'
+
+d = downloader.Downloader()
 
 def status(msg):
     print("{}\n".format(msg))
@@ -239,7 +242,7 @@ according to the post date.")
                 sucatalog_url = config_plist['CatalogURL']
 
 
-        data = urlopen(sucatalog_url).read()
+        data = d.get_string(sucatalog_url)
         p = loads_plist(data)
         allprods = p['Products']
 
@@ -256,7 +259,7 @@ according to the post date.")
         for bc_prod in bc_prods:
             if 'English' in list(bc_prod[1]['Distributions']):
                 disturl = bc_prod[1]['Distributions']['English']
-                dist_data = urlopen(disturl).read()
+                dist_data = d.get_string(disturl)
                 dist_data = dist_data.decode("utf-8") if sys.version_info >= (3,0) else dist_data
                 if opts.latest_version or re.search(model, dist_data):
                     supported_models = []

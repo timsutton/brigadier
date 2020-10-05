@@ -242,7 +242,7 @@ according to the post date.")
                 sucatalog_url = config_plist['CatalogURL']
 
 
-        data = d.get_string(sucatalog_url)
+        data = d.get_bytes(sucatalog_url)
         p = loads_plist(data)
         allprods = p['Products']
 
@@ -260,7 +260,6 @@ according to the post date.")
             if 'English' in list(bc_prod[1]['Distributions']):
                 disturl = bc_prod[1]['Distributions']['English']
                 dist_data = d.get_string(disturl)
-                dist_data = dist_data.decode("utf-8") if sys.version_info >= (3,0) else dist_data
                 if opts.latest_version or re.search(model, dist_data):
                     supported_models = []
                     pkg_data.append({bc_prod[0]: bc_prod[1]})

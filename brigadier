@@ -333,6 +333,29 @@ when running the installer out of 'system32'." % output_dir)
             # subprocess.call(['/usr/bin/hdiutil', 'eject', mntpoint])
             shutil.rmtree(arc_workdir)
 
+        elif platform.system() == 'Linux':
+            status("Extracting for Linux...")
+            for arc in [pkg_dl_path,
+                        os.path.join(arc_workdir, 'Payload'),
+                        os.path.join(arc_workdir, 'Payload~')]:
+                if os.path.exists(arc):
+                    status("Extracting {}".format(arc))
+                    subprocess.call(['7z','x',arc, '-o{}'.format(arc_workdir)])
+
+            # BootCamp.pkg (xar) -> Payload (gzip) -> Payload~ (cpio) -> WindowsSupport.dmg
+            output_file = os.path.join(arc_workdir, 'WindowsSupport.dmg')
+            shutil.move(os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
+                output_file)
+            subprocess.call(['7z','-o{}'.format(landing_dir),'x','WindowsSupport.dmg',])
+            
+            status("Extracted to %s." % output_file)
+
+            if os.path.exists('/mnt/c/Windows/explorer.exe'):
+                subprocess.call(['/mnt/c/Windows/explorer.exe','.'])
+        else:
+            print("Platform not supported! ({})".format(playform.system()))
+            pass
+
     status("Done.")
 
 if __name__ == "__main__":

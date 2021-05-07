@@ -2,8 +2,8 @@
 
 # Get the curent directory, the script name
 # and the script name with "py" substituted for the extension.
-args="$@"
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+args=( "$@" )
+dir="${0%/*}"
 script="${0##*/}"
 target="${script%.*}.py"
 NL=$'\n'
@@ -276,13 +276,13 @@ main() {
         return 1
     fi
     # Found it - start our script and pass all args
-    "$python" "$dir/$target" $args
+    "$python" "$dir/$target" "${args[@]}"
 }
 
 # Check to see if we need to force based on
 # macOS version. 10.15 has a dummy python3 version
 # that can trip up some py3 detection in other scripts.
-set_use_py3_if "3" "10.15" "FORCE"
+# set_use_py3_if "3" "10.15" "FORCE"
 downloaded="FALSE"
 trap cleanup EXIT
 main

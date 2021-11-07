@@ -1,9 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import os
 import sys
 import subprocess
-import urllib2
 import plistlib
 import re
 import tempfile
@@ -13,7 +12,7 @@ import datetime
 import platform
 
 from pprint import pprint
-from urllib import urlretrieve
+from urllib.request import urlopen, urlretrieve
 from xml.dom import minidom
 
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-11-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
@@ -21,7 +20,7 @@ SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-11-10.15
 SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
 
 def status(msg):
-    print "%s\n" % msg
+    print("%s\n" % msg)
 
 def getCommandOutput(cmd):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -40,7 +39,7 @@ def getMachineModel():
         model = nodes[0].data
     elif platform.system() == 'Darwin':
         plistxml = getCommandOutput(['system_profiler', 'SPHardwareDataType', '-xml'])
-        plist = plistlib.readPlistFromString(plistxml)
+        plist = plistlib.loads(plistxml)
         model = plist[0]['_items'][0]['machine_model']
     return model
 
@@ -107,7 +106,7 @@ def installBootcamp(msipath):
     status("Install log output:")
     with open(logpath, 'r') as logfd:
         logdata = logfd.read()
-        print logdata.decode('utf-16')
+        print(logdata.decode('utf-16'))
     postInstallConfig()
     
 def main():
@@ -183,9 +182,9 @@ when running the installer out of 'system32'." % output_dir)
                 sucatalog_url = config_plist['CatalogURL']
 
 
-        urlfd = urllib2.urlopen(sucatalog_url)
+        urlfd = urlopen(sucatalog_url)
         data = urlfd.read()
-        p = plistlib.readPlistFromString(data)
+        p = plistlib.loads(data)
         allprods = p['Products']
 
         # Get all Boot Camp ESD products
@@ -201,8 +200,8 @@ when running the installer out of 'system32'." % output_dir)
         for bc_prod in bc_prods:
             if 'English' in bc_prod[1]['Distributions'].keys():
                 disturl = bc_prod[1]['Distributions']['English']
-                distfd = urllib2.urlopen(disturl)
-                dist_data = distfd.read()
+                distfd = urlopen(disturl)
+                dist_data = distfd.read().decode('utf-8')
                 if re.search(model, dist_data):
                     supported_models = []
                     pkg_data.append({bc_prod[0]: bc_prod[1]})
@@ -212,7 +211,7 @@ when running the installer out of 'system32'." % output_dir)
                     status("Model supported in package distribution file at %s." % disturl)
                     status("Distribution %s supports the following models: %s." % 
                         (bc_prod[0], ", ".join(supported_models)))
-        
+
         # Ensure we have only one ESD
         if len(pkg_data) == 0:
             sys.exit("Couldn't find a Boot Camp ESD for the model %s in the given software update catalog." % model)
@@ -224,35 +223,35 @@ when running the installer out of 'system32'." % output_dir)
             # sys.exit("There is more than one ESD product available for this model: %s. "
             #          "Automically selecting the one with the most recent PostDate.." 
             #          % ", ".join([p.keys()[0] for p in pkg_data]))
-            print "There is more than one ESD product available for this model:"
+            print("There is more than one ESD product available for this model:")
             # Init latest to be epoch start
             latest_date = datetime.datetime.fromtimestamp(0)
             chosen_product = None
             for i, p in enumerate(pkg_data):
-                product = p.keys()[0]
+                product = list(p)[0]
                 postdate = p[product].get('PostDate')
-                print "%s: PostDate %s" % (product, postdate)
+                print("%s: PostDate %s" % (product, postdate))
                 if postdate > latest_date:
                     latest_date = postdate
                     chosen_product = product
 
             if opts.product_id:
-                if opts.product_id not in [k.keys()[0] for k in pkg_data]:
+                if opts.product_id not in [list(k)[0] for k in pkg_data]:
                     sys.exit("Product specified with '--product-id %s' either doesn't exist "
                              "or was not found applicable to models: %s"
                              % (opts.product_id, ", ".join(models)))
                 chosen_product = opts.product_id
-                print "Selecting manually-chosen product %s." % chosen_product
+                print("Selecting manually-chosen product %s." % chosen_product)
             else:
-                print "Selecting %s as it's the most recently posted." % chosen_product
+                print("Selecting %s as it's the most recently posted." % chosen_product)
 
             for p in pkg_data:
-                if p.keys()[0] == chosen_product:
+                if list(p)[0] == chosen_product:
                     selected_pkg = p
             pkg_data = selected_pkg
 
-        pkg_id = pkg_data.keys()[0]
-        pkg_url = pkg_data.values()[0]['Packages'][0]['URL']
+        pkg_id = list(pkg_data)[0]
+        pkg_url = list(pkg_data.values())[0]['Packages'][0]['URL']
 
         # make a sub-dir in the output_dir here, named by product
         landing_dir = os.path.join(output_dir, 'BootCamp-' + pkg_id)
@@ -327,7 +326,7 @@ when running the installer out of 'system32'." % output_dir)
             # mountxml = getCommandOutput(['/usr/bin/hdiutil', 'attach',
             #     os.path.join(arc_workdir, 'Library/Application Support/BootCamp/WindowsSupport.dmg'),
             #     '-mountrandom', '/tmp', '-plist', '-nobrowse'])
-            # mountplist = plistlib.readPlistFromString(mountxml)
+            # mountplist = plistlib.loads(mountxml)
             # mntpoint = mountplist['system-entities'][0]['mount-point']
             # shutil.copytree(mntpoint, output_dir)
             # subprocess.call(['/usr/bin/hdiutil', 'eject', mntpoint])
@@ -340,7 +339,7 @@ when running the installer out of 'system32'." % output_dir)
                         os.path.join(arc_workdir, 'Payload~')]:
                 if os.path.exists(arc):
                     status("Extracting {}".format(arc))
-                    subprocess.call(['7z','x',arc, '-o{}'.format(arc_workdir)])
+                    subprocess.call(['7z', 'x', arc, '-o{}'.format(arc_workdir)])
 
             # BootCamp.pkg (xar) -> Payload (gzip) -> Payload~ (cpio) -> WindowsSupport.dmg
             output_file = os.path.join(arc_workdir, 'WindowsSupport.dmg')
@@ -353,7 +352,7 @@ when running the installer out of 'system32'." % output_dir)
             if os.path.exists('/mnt/c/Windows/explorer.exe'):
                 subprocess.call(['/mnt/c/Windows/explorer.exe','.'])
         else:
-            print("Platform not supported! ({})".format(playform.system()))
+            print("Platform not supported! ({})".format(platform.system()))
             pass
 
     status("Done.")

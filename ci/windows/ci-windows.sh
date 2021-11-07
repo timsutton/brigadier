@@ -1,8 +1,11 @@
 #!/bin/bash
 
-PYTHONVERSION=2.7
-pyenv --help
+set -eux -o pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd )"
+
+ls '/c/program files'
 
 python -V
 
-pip install pyinstaller
+pip install -r "${script_dir}/requirements.txt"

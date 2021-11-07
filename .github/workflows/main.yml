@@ -27,4 +27,4 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Setup environment
-        run: bash .\ci\ci-windows.sh
+        run: bash .\ci\windows\ci-windows.sh

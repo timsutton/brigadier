@@ -8,4 +8,6 @@ ls '/c/program files'
 
 python -V
 
+which python
+
 pip install -r "${script_dir}/requirements.txt"

@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
+import datetime
+import optparse
 import os
-import sys
-import subprocess
+import platform
 import plistlib
 import re
-import tempfile
 import shutil
-import optparse
-import datetime
-import platform
-
-from pprint import pprint
+import subprocess
+import sys
+import tempfile
 from urllib.request import urlopen, urlretrieve
 from xml.dom import minidom
 

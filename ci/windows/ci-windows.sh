@@ -13,3 +13,5 @@ $python -V
 # which python
 
 pip install -r "${script_dir}/requirements.txt"
+
+pyinstaller --onefile brigadier

@@ -1,6 +1,12 @@
 .DS_Store
-pyinstaller.zip
-pyinstaller-*
-brigadier*.zip
-/brigadier.plist
+
+# virtualenv
+.venv
+
+# possible brigadier outputs
 BootCamp-*
+
+# pyinstaller
+build
+dist
+*.spec

@@ -1,20 +1,19 @@
-import os,sys,subprocess,re,tempfile,shutil,optparse,datetime,platform,plistlib
-if sys.version_info >= (3,0):
-    from urllib.request import urlopen, urlretrieve, Request
-else:
-    from urllib2 import urlopen, Request
-    from urllib import urlretrieve
+import os,sys,subprocess,re,tempfile,shutil,optparse,datetime,platform,plistlib,json
 
-from pprint import pprint
 from xml.dom import minidom
 import downloader
 
+if 2/3==0: input = raw_input
+
 # SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
-# 7-Zip MSI (15.14)
-# SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
-# 7-Zip MSI (19.00)
-SEVENZIP_URL = 'https://www.7-zip.org/a/7z1900-x64.msi'
+z_json = "https://sourceforge.net/projects/sevenzip/best_release.json"
+z_url2 = "https://www.7-zip.org/a/7z1806-x64.msi"
+z_url  = "https://www.7-zip.org/a/7z[[vers]]-x64.msi"
+z_name = "7z.exe"
+z_path = None
+z_path64 = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files", "7-Zip", "7z.exe")
+z_path32 = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files (x86)", "7-Zip", "7z.exe")
 
 d = downloader.Downloader()
 
@@ -38,6 +37,46 @@ def loads_plist(s):
     else:
         return plistlib.readPlistFromString(s)
 
+def check_7z():
+    global z_path
+    z_path = next((x for x in (z_path64,z_path32) if os.path.exists(x)),None)
+    if z_path: return True
+    print("Couldn't locate {} - downloading...".format(z_name))
+    # Didn't find it - let's do some stupid stuff
+    # First we get our json response - or rather, try to, then parse it
+    # looking for the current version
+    dl_url = None
+    try:
+        json_data = json.loads(d.get_string(z_json,progress=False))
+        v_num = json_data.get("release",{}).get("filename","").split("/")[-1].lower().split("-")[0].replace("7z","").replace(".exe","")
+        if len(v_num):
+            dl_url = z_url.replace("[[vers]]",v_num)
+    except:
+        pass
+    if not dl_url: # Fall back on a known-good version
+        dl_url = z_url2
+    temp = tempfile.mkdtemp()
+    dl_name = os.path.basename(dl_url)
+    dl_file = d.stream_to_file(dl_url, os.path.join(temp, dl_name))
+    print("") # Move to the next line to avoid overwriting
+    print(dl_file)
+    if not dl_file: # Didn't download right
+        shutil.rmtree(temp,ignore_errors=True)
+        return False
+    print("")
+    print("Installing 7zip...")
+    retcode = subprocess.call(['msiexec', '/qn', '/i', os.path.join(temp, dl_name)])
+    if retcode != 0:
+        print("{} returned an error code of {} - trying to run in interactive mode...".format(dl_name,retcode))
+        retcode = subprocess.call(['msiexec', '/i', os.path.join(temp, dl_name)])
+        if retcode != 0:
+            shutil.rmtree(temp,ignore_errors=True)
+            print("Error ({})".format(retcode))
+            exit(1)
+    print("")
+    z_path = next((x for x in (z_path64,z_path32) if os.path.exists(x)),None)
+    return z_path and os.path.exists(z_path)
+
 # Returns this machine's model identifier, using wmic on Windows,
 # system_profiler on OS X
 def getMachineModel():
@@ -55,61 +94,9 @@ def getMachineModel():
         model = plist[0]['_items'][0]['machine_model']
     return model
 
-def get_size(size, suffix=None, use_1024=False, round_to=2, strip_zeroes=False):
-    # size is the number of bytes
-    # suffix is the target suffix to locate (B, KB, MB, etc) - if found
-    # use_2014 denotes whether or not we display in MiB vs MB
-    # round_to is the number of dedimal points to round our result to (0-15)
-    # strip_zeroes denotes whether we strip out zeroes 
-
-    # Failsafe in case our size is unknown
-    if size == -1:
-        return "Unknown"
-    # Get our suffixes based on use_1024
-    ext = ["B","KiB","MiB","GiB","TiB","PiB"] if use_1024 else ["B","KB","MB","GB","TB","PB"]
-    div = 1024 if use_1024 else 1000
-    s = float(size)
-    s_dict = {} # Initialize our dict
-    # Iterate the ext list, and divide by 1000 or 1024 each time to setup the dict {ext:val}
-    for e in ext:
-        s_dict[e] = s
-        s /= div
-    # Get our suffix if provided - will be set to None if not found, or if started as None
-    suffix = next((x for x in ext if x.lower() == suffix.lower()),None) if suffix else suffix
-    # Get the largest value that's still over 1
-    biggest = suffix if suffix else next((x for x in ext[::-1] if s_dict[x] >= 1), "B")
-    # Determine our rounding approach - first make sure it's an int; default to 2 on error
-    try:round_to=int(round_to)
-    except:round_to=2
-    round_to = 0 if round_to < 0 else 15 if round_to > 15 else round_to # Ensure it's between 0 and 15
-    bval = round(s_dict[biggest], round_to)
-    # Split our number based on decimal points
-    a,b = str(bval).split(".")
-    # Check if we need to strip or pad zeroes
-    b = b.rstrip("0") if strip_zeroes else b.ljust(round_to,"0") if round_to > 0 else ""
-    return "{:,}{} {}".format(int(a),"" if not b else "."+b,biggest)
-
-def downloadFile(url, filename):
-    # http://stackoverflow.com/questions/13881092/
-    # download-progressbar-for-python-3/13895723#13895723
-    def reporthook(blocknum, blocksize, totalsize):
-        readsofar = blocknum * blocksize
-        if totalsize > 0:
-            percent = readsofar * 1e2 / totalsize
-            t_size = get_size(totalsize)
-            r_size = get_size(readsofar,suffix=t_size.split(" ")[-1])
-            console_out = "\r{:.2f}% {} / {}".format(
-                percent, r_size, t_size)
-            sys.stderr.write(console_out)
-            if readsofar >= totalsize: # near the end
-                sys.stderr.write("\n")
-        else: # total size is unknown
-            sys.stderr.write("read {}\n".format(readsofar))
-
-    urlretrieve(url, filename, reporthook=reporthook)
-
 def sevenzipExtract(arcfile, command='e', out_dir=None):
-    cmd = [os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files", "7-Zip", "7z.exe")]
+    if not z_path and not check_7z(): exit(1) # Yikes - shouldn't happen
+    cmd = [z_path]
     cmd.append(command)
     if not out_dir:
         out_dir = os.path.dirname(arcfile)
@@ -242,7 +229,7 @@ according to the post date.")
                 sucatalog_url = config_plist['CatalogURL']
 
 
-        data = d.get_bytes(sucatalog_url)
+        data = d.get_bytes(sucatalog_url,progress=False)
         p = loads_plist(data)
         allprods = p['Products']
 
@@ -259,7 +246,7 @@ according to the post date.")
         for bc_prod in bc_prods:
             if 'English' in list(bc_prod[1]['Distributions']):
                 disturl = bc_prod[1]['Distributions']['English']
-                dist_data = d.get_string(disturl)
+                dist_data = d.get_string(disturl,progress=False)
                 if opts.latest_version or re.search(model, dist_data):
                     supported_models = []
                     pkg_data.append({bc_prod[0]: bc_prod[1]})
@@ -328,21 +315,13 @@ according to the post date.")
         pkg_dl_path = os.path.join(arc_workdir, pkg_url.split('/')[-1])
 
         status("Fetching Boot Camp product at URL {}.".format(pkg_url))
-        downloadFile(pkg_url, pkg_dl_path)
+        d.stream_to_file(pkg_url, pkg_dl_path)
+        print("") # Move to the next line to avoid overwriting
 
         if platform.system() == 'Windows':
-            we_installed_7zip = False
-            sevenzip_binary = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", 'Program Files', '7-Zip', '7z.exe')
-            # fetch and install 7-Zip
-            if not os.path.exists(sevenzip_binary):
-                tempdir = tempfile.mkdtemp()
-                sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
-                downloadFile(SEVENZIP_URL, sevenzip_msi_dl_path)
-                status("Downloaded 7-zip to {}.".format(sevenzip_msi_dl_path))
-                status("We need to install 7-Zip..")
-                retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])
-                status("7-Zip install returned exit code {}.".format(retcode))
-                we_installed_7zip = True
+            if not check_7z():
+                print("7-Zip was not found - aborting...")
+                exit(1)
 
             status("Extracting...")
             # BootCamp.pkg (xar) -> Payload (gzip) -> Payload~ (cpio) -> WindowsSupport.dmg
@@ -355,9 +334,6 @@ according to the post date.")
             sevenzipExtract(os.path.join(arc_workdir, 'WindowsSupport.dmg'),
                             command='x',
                             out_dir=landing_dir)
-            if we_installed_7zip:
-                status("Cleaning up the 7-Zip install...")
-                subprocess.call(['cmd', '/c', 'msiexec', '/qn', '/x', sevenzip_msi_dl_path])
             if opts.install:
                 status("Installing Boot Camp...")
                 installBootcamp(findBootcampMSI(landing_dir))
@@ -391,6 +367,7 @@ according to the post date.")
             shutil.rmtree(arc_workdir)
 
     status("Done.")
+    input("Press [enter] to exit...")
 
 if __name__ == "__main__":
     main()

@@ -37,8 +37,8 @@ set_use_py3_if () {
 
 get_remote_py_version () {
     local pyurl= py_html= py_vers= py_num="3"
-    pyurl="https://www.python.org/downloads/mac-osx/"
-    py_html="$(curl -v $pyurl 2>&1)"
+    pyurl="https://www.python.org/downloads/macos/"
+    py_html="$(curl -L $pyurl 2>&1)"
     if [ "$use_py3" == "" ]; then
         use_py3="TRUE"
     fi
@@ -67,7 +67,11 @@ download_py () {
     echo "Located Version:  $vers"
     echo
     echo "Building download url..."
-    url="https://www.python.org/ftp/python/$vers/python-$vers-macosx10.9.pkg"
+    url="$(curl -L https://www.python.org/downloads/release/python-${vers//./}/ 2>&1 | grep -iE "python-$vers-macos.*.pkg\"" | awk -F'"' '{ print $2 }')"
+    if [ "$url" == "" ]; then
+        # Couldn't get the URL - bail
+        print_error
+    fi
     echo " - $url"
     echo
     echo "Downloading..."
@@ -105,6 +109,7 @@ download_py () {
     # Now we check for py again
     echo "Rechecking py..."
     downloaded="TRUE"
+    clear
     main
 }
 
@@ -123,7 +128,7 @@ print_error() {
     echo
     echo "Python is not installed or not found in your PATH var."
     echo
-    echo "Please go to https://www.python.org/downloads/mac-osx/"
+    echo "Please go to https://www.python.org/downloads/macos/"
     echo "to download and install the latest version."
     echo
     exit 1
@@ -245,7 +250,6 @@ prompt_and_download() {
 }
 
 main() {
-    clear
     python=
     version=
     # Verify our target exists

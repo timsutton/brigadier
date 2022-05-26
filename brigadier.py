@@ -7,13 +7,14 @@ if 2/3==0: input = raw_input
 
 # SUCATALOG_URL = 'http://swscan.apple.com/content/catalogs/others/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
-z_json = "https://sourceforge.net/projects/sevenzip/best_release.json"
-z_url2 = "https://www.7-zip.org/a/7z1806-x64.msi"
-z_url  = "https://www.7-zip.org/a/7z[[vers]]-x64.msi"
-z_name = "7z.exe"
-z_path = None
-z_path64 = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files", "7-Zip", "7z.exe")
-z_path32 = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files (x86)", "7-Zip", "7z.exe")
+if os.name=="nt": # Set Windows-specific properties
+    z_json = "https://sourceforge.net/projects/sevenzip/best_release.json"
+    z_url2 = "https://www.7-zip.org/a/7z1806-x64.msi"
+    z_url  = "https://www.7-zip.org/a/7z[[vers]]-x64.msi"
+    z_name = "7z.exe"
+    z_path = None
+    z_path64 = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files", "7-Zip", "7z.exe")
+    z_path32 = os.path.join(os.environ['SYSTEMDRIVE'] + "\\", "Program Files (x86)", "7-Zip", "7z.exe")
 
 d = downloader.Downloader()
 

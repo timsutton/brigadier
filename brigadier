@@ -18,7 +18,7 @@ from xml.dom import minidom
 
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-11-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 # 7-Zip MSI (15.14)
-SEVENZIP_URL = 'http://www.7-zip.org/a/7z1514-x64.msi'
+SEVENZIP_URL = 'https://www.7-zip.org/a/7z2201-x64.msi'
 
 def status(msg):
     print "%s\n" % msg

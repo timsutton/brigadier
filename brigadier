@@ -16,6 +16,7 @@ from pprint import pprint
 from urllib import urlretrieve
 from xml.dom import minidom
 
+VERSION = '0.2.5'
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-11-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 # 7-Zip MSI (15.14)
 SEVENZIP_URL = 'https://www.7-zip.org/a/7z2201-x64.msi'
@@ -131,8 +132,14 @@ product, ie. 'BootCamp-041-1234'. Uses the current directory if this option is o
         help="Specify an exact product ID to download (ie. '031-0787'), currently useful only for cases \
 where a model has multiple BootCamp ESDs available and is not downloading the desired version \
 according to the post date.")
+    o.add_option('-V', '--version', action="store_true",
+        help="Output the version of brigadier.")
 
     opts, args = o.parse_args()
+    if opts.version:
+        print VERSION
+        sys.exit(0)
+
     if opts.install:
         if platform.system() == 'Darwin':
             sys.exit("Installing Boot Camp can only be done on Windows!")

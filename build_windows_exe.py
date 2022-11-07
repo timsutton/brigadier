@@ -6,6 +6,13 @@
 # Requires:
 # - Python 2.7 for Windows (http://www.python.org/getit)
 # - pywin32 (http://sourceforge.net/projects/pywin32)
+#
+# Note (2022-11-07): This script needs to be overhauled to instead
+# just use a virtualenv. PyInstaller 3.6 needs pywin32-ctypes, and
+# also to pass a .spec file into pyinstaller, so that the exe contains
+# more metadata and version info. As-is the script doesn't currently
+# work, and I've just bumped the PyInstaller version to 3.6 as a reminder
+# that this is the last version that is still compatible with Python 2.7.
 
 import urllib
 import os
@@ -14,7 +21,7 @@ import subprocess
 import shutil
 import hashlib
 
-PYINSTALLER_URL = 'https://pypi.python.org/packages/source/P/PyInstaller/PyInstaller-2.1.zip'
+PYINSTALLER_URL = 'https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v3.6.zip'
 PYINST_ZIPFILE = os.path.join(os.getcwd(), 'pyinstaller.zip')
 NAME = 'brigadier'
 

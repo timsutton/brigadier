@@ -1,3 +1,10 @@
+### 0.2.5 (November 7, 2022)
+- update 7-Zip to 22.01
+- add '-V/--version' option to output the tool version
+- update precompiled Windows exe to the last Python 2.7 distribution and
+  compatible PyInstaller (3.6) version, resolving issues with TLS version
+  support
+
 ### 0.2.4 (March 24, 2016)
 - remove dependency on dmg2iso, as current 7-Zip versions seem to reliably
   extract all the contents of WindowsSupport.dmg files

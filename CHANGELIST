@@ -1,3 +1,7 @@
+### 0.2.6 (November 9, 2022)
+- use certifi package to provide a certificates bundle, fixing issues
+  with accessing 7-zip website (LetsEncrypt) from old Windows versions
+
 ### 0.2.5 (November 7, 2022)
 - update 7-Zip to 22.01
 - add '-V/--version' option to output the tool version

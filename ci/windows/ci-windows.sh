@@ -12,7 +12,7 @@ $python -V
 
 $python -m pip install -r "${script_dir}/requirements.txt"
 
-$PYTHON_HOME="/c/hostedtoolcache/windows/Python/${PYTHON_VERSION}/x64" \
+PYTHON_HOME="/c/hostedtoolcache/windows/Python/${PYTHON_VERSION}/x64" \
     pyinstaller \
     --onefile \
     brigadier

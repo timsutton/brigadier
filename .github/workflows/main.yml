@@ -29,8 +29,11 @@ jobs:
       - name: Build
         run: bash .\ci\windows\ci-windows.sh
 
-      - name: Archive production artifacts
+      - name: Archive
         uses: actions/upload-artifact@v3
         with:
           name: brigadier-windows-exe
           path: D:\a\brigadier\brigadier\dist
+
+      - name: Test
+        run: bash .\ci\windows\test.sh

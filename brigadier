@@ -11,12 +11,13 @@ import shutil
 import optparse
 import datetime
 import platform
+import requests
 
 from pprint import pprint
 from urllib import urlretrieve
 from xml.dom import minidom
 
-VERSION = '0.2.5'
+VERSION = '0.2.6'
 SUCATALOG_URL = 'https://swscan.apple.com/content/catalogs/others/index-11-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog'
 # 7-Zip MSI (15.14)
 SEVENZIP_URL = 'https://www.7-zip.org/a/7z2201-x64.msi'
@@ -45,7 +46,7 @@ def getMachineModel():
         model = plist[0]['_items'][0]['machine_model']
     return model
 
-def downloadFile(url, filename):
+def downloadFile(url, filename, use_requests=False):
     # http://stackoverflow.com/questions/13881092/
     # download-progressbar-for-python-3/13895723#13895723
     def reporthook(blocknum, blocksize, totalsize):
@@ -60,6 +61,15 @@ def downloadFile(url, filename):
         else: # total size is unknown
             sys.stderr.write("read %d\n" % (readsofar,))
 
+    if use_requests:
+        resp = requests.get(url, stream=True)
+        with open(filename, 'wb') as fd:
+            for chunk in resp.iter_content(chunk_size=1024):
+                fd.write(chunk)
+        return
+
+    # urlretrieve method will likely just go away soon, and we'll use only requests
+    # with some kind of report/progress output
     urlretrieve(url, filename, reporthook=reporthook)
 
 def sevenzipExtract(arcfile, command='e', out_dir=None):
@@ -287,7 +297,7 @@ when running the installer out of 'system32'." % output_dir)
             if not os.path.exists(sevenzip_binary):
                 tempdir = tempfile.mkdtemp()
                 sevenzip_msi_dl_path = os.path.join(tempdir, SEVENZIP_URL.split('/')[-1])
-                downloadFile(SEVENZIP_URL, sevenzip_msi_dl_path)
+                downloadFile(SEVENZIP_URL, sevenzip_msi_dl_path, use_requests=True)
                 status("Downloaded 7-zip to %s." % sevenzip_msi_dl_path)
                 status("We need to install 7-Zip..")
                 retcode = subprocess.call(['msiexec', '/qn', '/i', sevenzip_msi_dl_path])

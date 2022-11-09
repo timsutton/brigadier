@@ -10,8 +10,9 @@ ls '/c/program files'
 
 $python -V
 
-# which python
+$python -m pip install -r "${script_dir}/requirements.txt"
 
-pip install -r "${script_dir}/requirements.txt"
-
-pyinstaller --onefile brigadier
+$PYTHON_HOME="/c/hostedtoolcache/windows/Python/${PYTHON_VERSION}/x64" \
+    pyinstaller \
+    --onefile \
+    brigadier

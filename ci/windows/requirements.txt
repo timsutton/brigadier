@@ -1,1 +1,6 @@
 pyinstaller==3.6
+certifi==2021.10.8
+chardet==4.0.0
+idna==2.10
+requests==2.27.1
+urllib3==1.26.12

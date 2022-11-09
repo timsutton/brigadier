@@ -370,7 +370,7 @@ when running the installer out of 'system32'." % output_dir)
             if os.path.exists('/mnt/c/Windows/explorer.exe'):
                 subprocess.call(['/mnt/c/Windows/explorer.exe','.'])
         else:
-            print("Platform not supported! ({})".format(playform.system()))
+            print("Platform not supported! ({})".format(platform.system()))
             pass
 
     status("Done.")

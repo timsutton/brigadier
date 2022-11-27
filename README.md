@@ -95,3 +95,242 @@ On OS X, we have the native hdiutil and pkgutil commands to do the work of unpac
 * The 7-Zip downloads from a public URLs which is hardcoded in the script. Soon the `brigadier.plist` will support overriding these URLs with your own copies stored on a private webserver.
 * After installation, it sets the `FirstTimeRun` registry key at `HKEY_CURRENT_USER\Software\Apple Inc.\Apple Keyboard Support` to disable the first-launch Boot Camp help popup, and there's currently no option to disable this behaviour.
 * Only supports installations on 64-bit Windows. It's worth mentioning that the December 2012 Boot Camp driver ESDs seem to be 64-bit only, so extra work would need to be done to support 32-bit Windows. If 32-bit Windows support is important to you, there is an [issue](https://github.com/timsutton/brigadier/issues/2) created to track it.
+
+## List of MacBook Pro models ([source](https://support.apple.com/en-us/HT201300))
+
+### 2018
+
+MacBook Pro (15-inch, 2018)
+Colors: Silver, space gray
+Model Identifier: MacBookPro15,1
+Part Numbers: MR932xx/A, MR942xx/A, MR952xx/A, MR962xx/A, MR972xx/A
+ 
+
+MacBook Pro (13-inch, 2018, Four Thunderbolt 3 ports)
+Colors: Silver, space gray
+Model Identifier: MacBookPro15,2
+Part Numbers: MR9Q2xx/A, MR9R2xx/A, MR9T2xx/A, MR9U2xx/A, MR9V2xx/A
+ 
+
+### 2017
+
+MacBook Pro (15-inch, 2017)
+Colors: Silver, space gray
+Model Identifier: MacBookPro14,3
+Part Numbers: MPTR2xx/A, MPTT2xx/A, MPTU2xx/A, MPTV2xx/A, MPTW2xx/A, MPTX2xx/A
+ 
+
+MacBook Pro (13-inch, 2017, Four Thunderbolt 3 ports)
+Colors: Silver, space gray
+Model Identifier: MacBookPro14,2
+Part Numbers: MPXV2xx/A, MPXW2xx/A, MPXX2xx/A, MPXY2xx/A, MQ002xx/A, MQ012xx/A
+ 
+
+MacBook Pro (13-inch, 2017, Two Thunderbolt 3 ports)
+Colors: Silver, space gray
+Model Identifier: MacBookPro14,1
+Part Numbers: MPXQ2xx/A, MPXR2xx/A, MPXT2xx/A, MPXU2xx/A
+ 
+
+### 2016
+
+MacBook Pro (15-inch, 2016)
+Colors: Silver, space gray
+Model Identifier: MacBookPro13,3
+Part Numbers: MLH32xx/A, MLH42xx/A, MLH52xx/A, MLW72xx/A, MLW82xx/A, MLW92xx/A
+ 
+
+MacBook Pro (13-inch, 2016, Four Thunderbolt 3 ports)
+Colors: Silver, space gray
+Model Identifier: MacBookPro13,2
+Part Numbers: MLH12xx/A, MLVP2xx/A, MNQF2xx/A, MNQG2xx/A, MPDK2xx/A, MPDL2xx/A
+ 
+
+MacBook Pro (13-inch, 2016, Two Thunderbolt 3 ports)
+Colors: Silver, space gray
+Model Identifier: MacBookPro13,1
+Part Numbers: MLL42xx/A, MLUQ2xx/A
+ 
+
+### 2015
+
+MacBook Pro (Retina, 15-inch, Mid 2015)
+Model Identifier: MacBookPro11,4
+Part Number: MJLQ2xx/A
+ 
+
+MacBook Pro (Retina, 15-inch, Mid 2015)
+Model Identifier: MacBookPro11,5
+Part Numbers: MJLT2xx/A, MJLU2xx/A
+ 
+
+MacBook Pro (Retina, 13-inch, Early 2015)
+Model Identifier: MacBookPro12,1
+Part Numbers: MF839xx/A, MF840xx/A, MF841xx/A, MF843xx/A
+ 
+
+### 2014
+
+MacBook Pro (Retina, 15-inch, Mid 2014)
+Model Identifier: MacBookPro11,2
+Part Number: MGXA2xx/A
+ 
+
+MacBook Pro (Retina, 15-inch, Mid 2014)
+Model Identifier: MacBookPro11,3
+Part Number: MGXC2xx/A
+ 
+
+MacBook Pro (Retina, 13-inch, Mid 2014)
+Model Identifier: MacBookPro11,1
+Part Numbers: MGX72xx/A, MGX82xx/A, MGX92xx/A
+ 
+
+### 2013
+
+MacBook Pro (Retina, 15-inch, Late 2013)
+Model Identifier: MacBookPro11,2
+Part Number: ME293xx/A
+ 
+
+MacBook Pro (Retina, 15-inch, Late 2013)
+Model Identifier: MacBookPro11,3
+Part Number: ME294xx/A
+ 
+
+MacBook Pro (Retina, 15-inch, Early 2013)
+Model Identifier: MacBookPro10,1
+Part Numbers: ME664xx/A, ME665xx/A
+ 
+
+MacBook Pro (Retina, 13-inch, Late 2013)
+Model Identifier: MacBookPro11,1
+Part Numbers: ME864xx/A, ME865xx/A, ME866xx/A
+ 
+
+MacBook Pro (Retina, 13-inch, Early 2013)
+Model Identifier: MacBookPro10,2
+Part Numbers: MD212xx/A, ME662xx/A
+ 
+
+### 2012
+
+MacBook Pro (Retina, 15-inch, Mid 2012)
+Model Identifier: MacBookPro10,1
+Part Numbers: MC975xx/A, MC976xx/A
+ 
+
+MacBook Pro (15-inch, Mid 2012)
+Model Identifier: MacBookPro9,1
+Part Numbers: MD103xx/A, MD104xx/A
+ 
+
+MacBook Pro (Retina, 13-inch, Late 2012)
+Model Identifier: MacBookPro10,2
+Part Numbers: MD212xx/A, MD213xx/A
+ 
+
+MacBook Pro (13-inch, Mid 2012)
+Model Identifier: MacBookPro9,2
+Part Numbers: MD101xx/A, MD102xx/A
+ 
+
+### 2011
+
+MacBook Pro (17-inch, Late 2011)
+Model Identifier: MacBookPro8,3
+Part Number: MD311xx/A
+ 
+
+MacBook Pro (17-inch, Early 2011)
+Model Identifier: MacBookPro8,3
+Part Number: MC725xx/A
+ 
+
+MacBook Pro (15-inch, Late 2011)
+Model Identifier: MacBookPro8,2
+Part Numbers: MD322xx/A, MD318xx/A
+ 
+
+MacBook Pro (15-inch, Early 2011)
+Model Identifier: MacBookPro8,2
+Part Numbers: MC723xx/A, MC721xx/A
+ 
+
+MacBook Pro (13-inch, Late 2011)
+Model Identifier: MacBookPro8,1
+Part Numbers: MD314xx/A, MD313xx/A
+ 
+
+MacBook Pro (13-inch, Early 2011)
+Model Identifier: MacBookPro8,1
+Part Numbers: MC724xx/A, MC700xx/A
+ 
+
+### 2010
+
+MacBook Pro (17-inch, Mid 2010)
+Model Identifier: MacBookPro6,1
+Part Number: MC024xx/A
+ 
+
+MacBook Pro (15-inch, Mid 2010)
+Model Identifier: MacBookPro6,2
+Part Numbers: MC373xx/A, MC372xx/A, MC371xx/A
+ 
+
+MacBook Pro (13-inch, Mid 2010)
+Model Identifier: MacBookPro7,1
+Part Numbers: MC375xx/A, MC374xx/A
+ 
+
+### 2009
+
+MacBook Pro (17-inch, Mid 2009)
+Model Identifier: MacBookPro5,2
+Part Number: MC226xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+MacBook Pro (17-inch, Early 2009)
+Model Identifier: MacBookPro5,2
+Part Number: MB604xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+MacBook Pro (15-inch, Mid 2009)
+Model Identifier: MacBookPro5,3
+Part Numbers: MB985xx/A, MB986xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+MacBook Pro (15-inch, 2.53GHz, Mid 2009)
+Model Identifier: MacBookPro5,3
+Part Number: MC118xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+MacBook Pro (13-inch, Mid 2009)
+Model Identifier: MacBookPro5,5
+Part Numbers: MB991xx/A, MB990xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+### 2008
+
+MacBook Pro (15-inch, Late 2008)
+Model Identifier: MacBookPro5,1
+Part Number: MB470xx/A, MB471xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+MacBook Pro (17-inch, Early 2008)
+Model Identifier: MacBookPro4,1
+Part Number: MB166xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6
+ 
+
+MacBook Pro (15-inch, Early 2008)
+Model Identifier: MacBookPro4,1
+Part Number: MB133xx/A, MB134xx/A
+Newest compatible operating system: OS X El Capitan 10.11.6

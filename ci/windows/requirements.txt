@@ -7,7 +7,7 @@ PyInstaller==3.6
 pywin32-ctypes==0.2.0
 
 # requests
-certifi==2021.10.8
+certifi==2022.12.7
 chardet==4.0.0
 idna==2.10
 requests==2.27.1

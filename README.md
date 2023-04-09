@@ -7,7 +7,7 @@ On Windows, the archives are unpacked using [7-Zip](http://www.7-zip.org), and t
 This was written for two reasons:
 
 1. We'd like to maintain as few Windows system images as possible, but there are typically 3-5 BootCampESD packages available from Apple at any given time, targeting specific sets of models. It's possible to use the [Orca](http://support.microsoft.com/kb/255905) tool to edit the MSI's properties and disable the model check, but there are rarely cases where a single installer contains all drivers. Apple can already download the correct installer for a booted machine model in OS X using the Boot Camp Assistant, so there's no reason we can't do the same within Windows.
-2. Sometimes we just want to download and extract a copy of the installer for a given model. The steps to do this manually are tedious, and there are many of them. As of the spring of 2013, Apple has made a number of Boot Camp installer packages available on their support downloads page, but they are still a split across many different different sets of models and it is still inconvenient to ensure you have the correct package.
+2. Sometimes we just want to download and extract a copy of the installer for a given model. The steps to do this manually are tedious, and there are many of them. As of the spring of 2013, Apple has made a number of Boot Camp installer packages available on their support downloads page, but they are still a split across many different sets of models and it is still inconvenient to ensure you have the correct package.
 
 It was originally designed to be run as post-imaging step for Boot Camp deployments to Macs, but as it requires network connectivity, a network driver must be already available on the system. (See Caveats below)
 

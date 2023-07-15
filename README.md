@@ -33,6 +33,10 @@ Place a `brigadier.plist` file in the same folder as the script to override the 
 
 Additional options shown below.
 
+### Usage on newer Macs
+
+To use it on newer mac machines that come with **Python 3**, use the `python3` branch.
+
 ## Getting it
 
 You can find a pre-compiled binary for Windows in the [releases](https://github.com/timsutton/brigadier/releases) area. This can be useful if you don't already have Python installed on Windows. This was built using [PyInstaller](http://www.pyinstaller.org). More details on building it yourself [below](#runningbuilding-from-source-on-windows).

@@ -50,7 +50,7 @@ Param(
     
     # URL to download 7-Zip from, if not installed
     [Alias('SEVENZIP_URL')]
-    [string]$SevenZipURL = 'https://www.7-zip.org/a/7z1900-x64.exe'
+    [string]$SevenZipURL = 'https://github.com/ip7z/7zip/releases/download/21.07/7z2107-x64.exe'
 )
 
 # Disable Invoke-WebRequest progress bar to speed up download due to bug
